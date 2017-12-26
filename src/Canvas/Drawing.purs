@@ -1,5 +1,6 @@
 module Canvas.Drawing
-  ( parseVis
+  ( convertRange
+  , parseVis
   , splitBoxH
   ) where
 
@@ -9,9 +10,10 @@ import Data.Foldable (sequence_)
 import Data.Int (toNumber)
 import Data.List (List(..), zipWith, (:))
 import Data.List.NonEmpty (length, toList)
+import Data.Ord (abs)
 import Data.Tuple (Tuple(..))
 import Graphics.Canvas (Context2D, fillRect, setFillStyle, setLineWidth, setStrokeStyle, strokeRect)
-import Prelude (bind, discard, pure, (+), (-), (*), (/), ($))
+import Prelude (bind, discard, pure, ($), (*), (+), (-), (/), (>=))
 import Vis.Types (Frame(..), Rectangle, VVis(..))
 
 
@@ -36,11 +38,24 @@ drawBox :: forall m.
   Context2D -> Number -> Rectangle -> Frame Number -> Eff (CEffects m) Context2D
 drawBox c v' r (Frame f) = do
   let v = convertRange v' (Tuple f.frameMin f.frameMax) (Tuple r.y (r.y + r.h))
+      z = convertRange 0.0 (Tuple f.frameMin f.frameMax) (Tuple r.y (r.y + r.h))
   _ <- setFillStyle "#657b83" c
-  _ <- fillRect c { x: r.x, y: r.h - v, w: r.w, h: v }
-  _ <- setStrokeStyle "#ffffff" c
-  _ <- setLineWidth 0.5 c
-  strokeRect c { x: r.x, y: r.h - v, w: r.w, h: v }
+  if v' >= 0.0
+    then fillRect c { x: r.x
+                    , y: r.h - z - (v - z)
+                    , w: r.w
+                    , h: v - z
+                    }
+    else fillRect c { x: r.x
+                    , y: r.h - z
+                    , w: r.w
+                    , h: z - v
+                    }
+    -- then fillRect c { x: r.x, y: r.h - z - v, w: r.w, h: v}
+    -- else fillRect c { x: r.x, y: z, w: r.w, h: abs v}
+  -- _ <- setStrokeStyle "#ffffff" c
+  -- _ <- setLineWidth 0.5 c
+  -- strokeRect c { x: r.x, y: r.h - v, w: r.w, h: v }
 
 convertRange :: Number -> Tuple Number Number -> Tuple Number Number -> Number
 convertRange v (Tuple omin omax) (Tuple nmin nmax) =

@@ -10,7 +10,7 @@ import Graphics.Canvas (CANVAS)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
-import Prelude (Unit, ($), bind)
+import Prelude (Unit, ($), bind, negate)
 import Vis.Types (Frame(..), VVis (..), fills, nextTo)
 
 main :: Eff (HA.HalogenEffects (canvas :: CANVAS)) Unit
@@ -22,11 +22,11 @@ main = HA.runHalogenAff do
 -- | visualization that will be rendered.  It's just for convenience.
 defaultVis :: VVis Number
 defaultVis =
-  let f = Frame { frameMin: 0.0, frameMax: 12.0 }
-  in NextTo $ (cons (V "A" (Fill 2.0 f) (Fill 10.5 f))
+  let f = Frame { frameMin: -4.0, frameMax: 12.0 }
+  in NextTo $ (cons (V "A" (Fill 2.0 f) (V "B" (Fill 10.5 f) (Fill 8.0 f)))
                 (cons (Fill 12.0 f)
-                  (cons (Fill 2.0 f)
-                    (singleton (Fill 4.0 f)))))
+                  (cons (Fill (-1.0) f)
+                    (singleton (Fill (-4.0) f)))))
 
 -- | Kind of like `main`, except it does the extra step of deleting all child
 -- | HTML nodes from the body.  This is useful when running from a REPL.
