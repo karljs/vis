@@ -1,0 +1,51 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  font-family: Helvetica;
+}
+
+#container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #002b36;
+}
+
+canvas {
+  width: calc(70% - 20px);
+  height: calc(100% - 20px);
+  /* margin: 2px; */
+  float: left;
+  padding: 8px;
+  border: 2px solid black;
+  background-color: #ffffff;
+  image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
+  image-rendering: -webkit-optimize-contrast; /* Safari                        */
+  image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
+  image-rendering: pixelated;                 /* Awesome future-browsers       */
+  -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
+}
+
+#dims {
+  width: calc(30% - 2px);
+  height: calc(100% - 4px);
+  border-right: 2px solid black;
+  border-top: 2px solid black;
+  border-bottom: 2px solid black;
+  border-left: none;
+  /* margin-top: 2px; */
+  /* margin-bottom: 2px; */
+  /* margin-right: 2px; */
+  /* margin-left: 0px; */
+  background-color: #fdf6e3;
+  float: right;
+}
+
+fieldset {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border-style: solid;
+  border-color: #002b36;
+  border-width: 1px;
+}
