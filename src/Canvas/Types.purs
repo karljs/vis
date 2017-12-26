@@ -8,7 +8,8 @@ module Canvas.Types
   ) where
 
 import Graphics.Canvas (CANVAS)
-import Prelude (class Eq, class Ord, Void)
+import Prelude (class Eq, class Ord)
+import UI.Types
 import Vis.Types (Rectangle, VVis)
 
 -- | A type corresponding to a part of a canvas that we can render to, which
@@ -33,7 +34,7 @@ type CState a = { currVis :: VVis a
 -- | to deal with is a request to render, which is issued at initialization.
 data CQuery a
   = Render a
-  | Changed Void a
+  | Changed UIMessage a
 
 -- | The input to the canvas component, which is the visualization to be
 -- | rendered.

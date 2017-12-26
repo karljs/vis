@@ -1,5 +1,6 @@
 module UI.Types
   ( UIInput
+  , UIMessage (..)
   , UIState
   , UIQuery (..)
   ) where
@@ -24,3 +25,5 @@ data UIQuery a
 -- | The input to the UI component is just a visualization, from which we
 -- | can extract a default view decision.
 type UIInput a = VVis a
+
+data UIMessage = Toggled Decision

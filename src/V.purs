@@ -1,12 +1,13 @@
 module V
   ( module V.Types
   , decDims
+  , emptyDec
   , leftDec
   , lookupDim
+  , showDec
+  , showDecM
   , toggleDim
   , vDims
-
-  , emptyDec
   ) where
 
 import Prelude (($), (<>), (<<<), flip, map)
@@ -73,6 +74,9 @@ leftDec ds = M.fromFoldable $ map (flip Tuple L) ds
 showDec :: Decision -> String
 showDec = M.showTree
 
+showDecM :: Maybe Decision -> String
+showDecM (Just dec) = showDec dec
+showDecM Nothing = "NO DEC STUPID ERROR"
 
 
 -- testDec :: Decision
