@@ -7,9 +7,11 @@ module Canvas.Types
   , UISlot (..)
   ) where
 
+import UI.Types
+
+import DOM (DOM)
 import Graphics.Canvas (CANVAS)
 import Prelude (class Eq, class Ord)
-import UI.Types
 import Vis.Types (Rectangle, VVis)
 
 -- | A type corresponding to a part of a canvas that we can render to, which
@@ -23,7 +25,7 @@ data Space
 
 -- | An extensible record that includes the CANVAS effect, which we use to
 -- | draw things to an HTML canvas.
-type CEffects eff = (canvas :: CANVAS | eff)
+type CEffects eff = (canvas :: CANVAS, dom :: DOM | eff)
 
 -- | The state for the canvas component, which is currently just a variational
 -- | visualization.  The view decision comes from querying the child UI.

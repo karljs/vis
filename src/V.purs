@@ -4,19 +4,22 @@ module V
   , emptyDec
   , leftDec
   , lookupDim
+  , plainVals
   , showDec
   , showDecM
   , toggleDim
   , vDims
   ) where
 
-import Prelude (($), (<>), (<<<), flip, map)
-import Data.List (List (..), (:), nub, sort)
-import Data.Map as M
 import Data.Maybe
-import Data.Tuple (Tuple (..))
 
-import V.Types (Decision, Dim, Dir (..) , V (..))
+import Data.List (List(..), (:), nub, sort)
+import Data.List.NonEmpty (singleton)
+import Data.List.Types (NonEmptyList(..))
+import Data.Map as M
+import Data.Tuple (Tuple(..))
+import Prelude (flip, map, ($), (<<<), (<>))
+import V.Types (Decision, Dim, Dir(..), V(..))
 
 --------------------------------------------------------------------------------
 -- Select, extract, or modify parts of the V types
@@ -55,6 +58,10 @@ flop R = Just L
 -- | Toggle one particular dimension in a decision
 toggleDim :: Dim -> Decision -> Decision
 toggleDim dim dec = M.update flop dim dec
+
+plainVals :: forall a. V a -> NonEmptyList a
+plainVals (One x) = singleton x
+plainVals (Chc d l r) = plainVals l <> plainVals r
 
 --------------------------------------------------------------------------------
 --- Constructing or generating particular kinds of V types.

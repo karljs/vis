@@ -1,16 +1,16 @@
 module UI (module UI.Types, uiComponent) where
 
--- import CSS (Color, StyleM, backgroundColor, border, float, floatRight, fontFamily, height, margin, marginBottom, marginTop, pct, px, rgb, sansSerif, solid, width)
--- import CSS.Overflow (overflow, hidden)
-import Data.Array (cons, (:))
+import CSS (Color, StyleM, backgroundColor, bold, border, display, flexGrow, flexShrink, float, floatRight, fontFamily, fontWeight, height, inlineBlock, margin, marginBottom, marginRight, marginTop, pct, px, rgb, sansSerif, solid, white, width)
+import CSS.Overflow (overflow, hidden)
+import Data.Array ((:))
 import Data.List (toUnfoldable)
 import Data.Maybe (Maybe(..))
-import Data.String (fromCharArray, toCharArray)
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.CSS (style)
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Prelude (type (~>), Unit, Void, bind, const, discard, map, pure, ($))
+import Prelude (type (~>), Unit, bind, const, discard, map, pure)
 import UI.Types (UIInput, UIMessage(..), UIState, UIQuery(..))
 import V (Dim, decDims, showDec, toggleDim)
 import Vis (VVis, visInitDec)
@@ -36,10 +36,10 @@ uiComponent =
   render state =
     HH.div
         [ HP.id_ "dims"
-        -- , style dimsStyle
+        , style dimsStyle
         ]
         [ HH.fieldset
-          [ --style fieldsetStyle
+          [ style fieldsetStyle
           ]
           ( HH.legend_ [ HH.h2_ [ HH.text "Dimensions" ] ] :
             map dimBox (toUnfoldable (decDims state.viewDec)) )
@@ -65,7 +65,8 @@ dimBox d =
   HH.label_ [ HH.input [ HP.type_ HP.InputCheckbox
                        , HP.title d
                        , HE.onChecked (HE.input_ (Toggle d)) ]
-            , HH.text d]
+            , HH.text d
+            , HH.br_ ]
 
 
 --------------------------------------------------------------------------------
@@ -78,17 +79,23 @@ toggleViewDec dim st = st { viewDec = toggleDim dim st.viewDec }
 --------------------------------------------------------------------------------
 -- Style definitions
 
--- dimsStyle :: StyleM Unit
--- dimsStyle = do
---   width (pct 29.0)
---   height (pct 100.0)
---   backgroundColor foreground
---   float floatRight
---   border solid (px 1.0) background
---   margin (px 0.0) (px 0.0) (px 0.0) (px 0.0)
+dimsStyle :: StyleM Unit
+dimsStyle = do
+  width (pct 30.0)
+  height (pct 100.0)
+  display inlineBlock
+  backgroundColor white
+  float floatRight
+  -- border solid (px 1.0) background
+  margin (px 0.0) (px 0.0) (px 0.0) (px 0.0)
 
--- fieldsetStyle :: StyleM Unit
--- fieldsetStyle = do
---   marginTop (px 10.0)
---   marginBottom (px 10.0)
---   border solid (px 1.0) background
+fieldsetStyle :: StyleM Unit
+fieldsetStyle = do
+  marginTop (px 0.0)
+  marginBottom (px 10.0)
+  border solid (px 1.0) background
+  fontWeight bold
+
+inputStyle :: StyleM Unit
+inputStyle = do
+  marginRight (px 5.0)
