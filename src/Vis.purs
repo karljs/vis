@@ -24,6 +24,7 @@ selectVis dec (V d l r) = case lookupDim d dec of
   Just R -> selectVis dec r
   Nothing -> V d (selectVis dec l) (selectVis dec r)
 selectVis dec (NextTo vs) = NextTo (map (selectVis dec) vs)
+selectVis dec (Above vs) = Above (map (selectVis dec) vs)
 
 -- | Generate an initial (view) decision for a particular visualization.
 -- | Generally this will be all left selections.
@@ -35,4 +36,5 @@ visDims :: forall a. VVis a -> List Dim
 visDims (Fill _ _) = Nil
 visDims (V d l r) = d : visDims l <> visDims r
 visDims (NextTo vs) = concatMap visDims (toList vs)
+visDims (Above vs) = concatMap visDims (toList vs)
 

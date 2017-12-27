@@ -9,6 +9,8 @@ import Halogen as H
 import Halogen.HTML as HH
 import Prelude
 
+-- | This component just inserts a stylesheet for the html body, because all the
+-- | stuff we are inserting otherwise is below the body.
 headComponent :: forall m. H.Component HH.HTML (Const Void) Unit Void m
 headComponent =
   H.component

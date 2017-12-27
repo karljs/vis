@@ -11,12 +11,11 @@ module V
   , vDims
   ) where
 
-import Data.Maybe
-
 import Data.List (List(..), (:), nub, sort)
 import Data.List.NonEmpty (singleton)
-import Data.List.Types (NonEmptyList(..))
+import Data.List.Types (NonEmptyList)
 import Data.Map as M
+import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple (Tuple(..))
 import Prelude (flip, map, ($), (<<<), (<>))
 import V.Types (Decision, Dim, Dir(..), V(..))
@@ -77,17 +76,9 @@ leftDec :: forall a. List Dim -> Decision
 leftDec ds = M.fromFoldable $ map (flip Tuple L) ds
 
 -- | Produce a text representation of a decision.
--- TODO: This is almost unreadable.
 showDec :: Decision -> String
 showDec = M.showTree
 
+-- | Produce a text representation of a decision that may or may not exist.
 showDecM :: Maybe Decision -> String
-showDecM (Just dec) = showDec dec
-showDecM Nothing = "NO DEC STUPID ERROR"
-
-
--- testDec :: Decision
--- testDec = M.fromFoldable [ Tuple "A" L
---                          , Tuple "B" R
---                          , Tuple "C" R ]
-
+showDecM = maybe "DEC ERROR" showDec

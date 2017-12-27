@@ -12,7 +12,7 @@ import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 import Prelude (Unit, bind, negate, ($))
 import V (V(..))
-import Vis.Types (VVis, fills, nextTo)
+import Vis.Types (VVis(..), fills)
 
 main :: Eff (HA.HalogenEffects (canvas :: CANVAS)) Unit
 main = HA.runHalogenAff do
@@ -22,17 +22,7 @@ main = HA.runHalogenAff do
 -- | When run as an executable with `main` as the entry point, this is the
 -- | visualization that will be rendered.  It's just for convenience.
 defaultVis :: VVis Number
-defaultVis = test
-
-vs :: List (V Number)
-vs = One 8.1 : Chc "negative" (One (-8.0)) (One 8.0) : One 2.3 : One (-5.2) :
-     One 0.3 : One 3.4 : Nil
-
-test :: VVis Number
-test = nextTo $ fills vs
-
-test2 :: VVis Number
-test2 = nextTo $ fills (reverse vs)
+defaultVis = v1
 
 -- | Kind of like `main`, except it does the extra step of deleting all child
 -- | HTML nodes from the body.  This is useful when running from a REPL.
@@ -44,3 +34,16 @@ go vis = HA.runHalogenAff do
          (firstChild (htmlElementToNode body))
          (\n -> removeChild n (htmlElementToNode body))
   runUI cComponent vis body
+
+--------------------------------------------------------------------------------
+-- Some test values for chartin
+
+vs :: List (V Number)
+vs = One 8.1 : Chc "My Dim" (One (-3.0)) (One 8.0) : One 2.3 : One (-5.2) :
+     One 1.3 : Chc "My Dim" (One 3.4) (One 4.2) : Nil
+
+v1 :: VVis Number
+v1 = NextTo $ fills vs
+
+v2 :: VVis Number
+v2 = NextTo $ fills (reverse vs)

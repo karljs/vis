@@ -1,7 +1,6 @@
 module UI (module UI.Types, uiComponent) where
 
-import CSS (Color, StyleM, backgroundColor, bold, border, display, flexGrow, flexShrink, float, floatRight, fontFamily, fontWeight, height, inlineBlock, margin, marginBottom, marginRight, marginTop, pct, px, rgb, sansSerif, solid, white, width)
-import CSS.Overflow (overflow, hidden)
+import CSS (StyleM, backgroundColor, bold, border, display, float, floatRight, fontWeight, height, inlineBlock, margin, marginBottom, marginRight, marginTop, pct, px, solid, white, width)
 import Data.Array ((:))
 import Data.List (toUnfoldable)
 import Data.Maybe (Maybe(..))
@@ -14,7 +13,7 @@ import Prelude (type (~>), Unit, bind, const, discard, map, pure)
 import UI.Types (UIInput, UIMessage(..), UIState, UIQuery(..))
 import V (Dim, decDims, showDec, toggleDim)
 import Vis (VVis, visInitDec)
-import VisColor (background, foreground)
+import VisColor (background)
 
 -- | The main UI child component which generates an interface for working with
 -- | the view decision.
@@ -62,7 +61,8 @@ uiComponent =
 -- | dimension.
 dimBox :: Dim -> H.ComponentHTML UIQuery
 dimBox d =
-  HH.label_ [ HH.input [ HP.type_ HP.InputCheckbox
+  HH.label_ [ HH.input [ style inputStyle
+                       , HP.type_ HP.InputCheckbox
                        , HP.title d
                        , HE.onChecked (HE.input_ (Toggle d)) ]
             , HH.text d
@@ -79,6 +79,7 @@ toggleViewDec dim st = st { viewDec = toggleDim dim st.viewDec }
 --------------------------------------------------------------------------------
 -- Style definitions
 
+-- | The style for the div that contains the dimension toggling UI.
 dimsStyle :: StyleM Unit
 dimsStyle = do
   width (pct 30.0)
@@ -89,6 +90,7 @@ dimsStyle = do
   -- border solid (px 1.0) background
   margin (px 0.0) (px 0.0) (px 0.0) (px 0.0)
 
+-- | The style for the fieldset containing the dimension checkboxes.
 fieldsetStyle :: StyleM Unit
 fieldsetStyle = do
   marginTop (px 0.0)
@@ -96,6 +98,7 @@ fieldsetStyle = do
   border solid (px 1.0) background
   fontWeight bold
 
+-- | The style for the checkboxes themselves.
 inputStyle :: StyleM Unit
 inputStyle = do
   marginRight (px 5.0)

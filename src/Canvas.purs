@@ -2,8 +2,7 @@ module Canvas
   ( cComponent
   ) where
 
-import CSS (StyleM, backgroundColor, body, display, flex, flexBasis, flexGrow, flexShrink, float, floatLeft, fontFamily, height, margin, nil, padding, pct, px, sansSerif, select, white, width)
-import CSS.Common (auto)
+import CSS (StyleM, backgroundColor, body, float, floatLeft, fontFamily, height, margin, nil, padding, pct, px, sansSerif, select, white, width)
 import CSS.Overflow (hidden, overflow)
 import Canvas.Drawing (parseVis)
 import Canvas.Types (CEffects, CInput, CQuery(..), CState, Space(..), UISlot(..))
@@ -14,18 +13,17 @@ import DOM.HTML.Window (innerHeight, innerWidth)
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
 import Data.NonEmpty (singleton)
-import Graphics.Canvas (CanvasElement, Context2D, clearRect, scale, translate)
+import Graphics.Canvas (CanvasElement, Context2D, clearRect, scale)
 import Graphics.Canvas as C
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.CSS (style, stylesheet)
 import Halogen.HTML.Events (input)
 import Halogen.HTML.Properties as HP
-import Prelude (type (~>), Unit, Void, bind, const, discard, negate, pure, ($), (*), (-), (/))
+import Prelude (type (~>), Unit, Void, bind, const, discard, pure, ($), (*), (-), (/))
 import UI (uiComponent)
 import UI.Types (UIQuery(..), UIMessage(..))
 import Vis (VVis, selectVis, selectVisM)
-import VisColor (background)
 
 -- | The main canvas parent component which represents the bulk of the application.
 cComponent :: forall m.
@@ -40,7 +38,6 @@ cComponent =
     , finalizer: Nothing
     }
   where
-
   initialState :: VVis Number -> CState Number
   initialState v  =
     { currVis: v

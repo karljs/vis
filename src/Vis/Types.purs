@@ -2,7 +2,7 @@ module Vis.Types
   ( Frame(..)
   , Rectangle
   , VVis(..)
-  , fill
+  , above
   , fills
   , nextTo
   ) where
@@ -11,8 +11,8 @@ import Data.List.NonEmpty (fromList)
 import Data.List.Types (List, NonEmptyList)
 import Data.Maybe (fromJust)
 import Partial.Unsafe (unsafePartial)
-import Prelude (class Ord, flip, map, ($), (<), (>))
-import Util (maximum, minimum, vmaximum, vminimum)
+import Prelude (map, ($), (<<<))
+import Util (vmaximum, vminimum)
 import V (Dim, V(..))
 
 -- | The primary type of a visualization
@@ -20,38 +20,42 @@ data VVis a
   = Fill a (Frame a)
   | V Dim (VVis a) (VVis a)
   | NextTo (NonEmptyList (VVis a))
+  | Above (NonEmptyList (VVis a))
 
+-- | A frame represents the context into which we map the values being charted.
+-- | Currently this just tracks the minimum and maximum values in a chart.
 data Frame a = Frame
   { frameMax :: a
   , frameMin :: a
   }
 
+-- | A rectangle is represented as a top left corner plus a width and height.
 type Rectangle = { x :: Number
                  , y :: Number
                  , w :: Number
                  , h :: Number
                  }
 
--- | A smart constructor for visualization marks.
-fill :: forall a. a -> Frame a -> VVis a
-fill = Fill
-
+-- | An _unsafe_ helper function (when the parameter list is empty) that takes a
+-- | list of variational numbers and produces a non-empty list of `Fill`
+-- | visualizations.
 fills :: List (V Number) -> NonEmptyList (VVis Number)
 fills vs =
   let vs' = unsafePartial $ fromJust (fromList vs)
       f = Frame { frameMax: vmaximum vs', frameMin: vminimum vs' }
-  in map (mkFill f) vs'
+  in map (vFill f) vs'
 
-mkFill :: Frame Number -> V Number -> VVis Number
-mkFill f (One v) = Fill v f
-mkFill f (Chc d l r) = V d (mkFill f l) (mkFill f r)
+-- | For a variational number, product a `Fill` visualization.
+vFill :: Frame Number -> V Number -> VVis Number
+vFill f (One v) = Fill v f
+vFill f (Chc d l r) = V d (vFill f l) (vFill f r)
 
-  -- let mx = maximum vs
-  --     mn = minimum vs
-  --     f = Frame { frameMax: if mx > 0.0 then mx else 0.0
-  --               , frameMin: if mn < 0.0 then mn else 0.0
-  --               }
-  -- in map (flip Fill f) vs
+-- | An _unsafe_ helper function (when the parameter list is empty) for
+-- | composing with `NextTo`.
+nextTo :: forall a. List (VVis a) -> VVis a
+nextTo vs = NextTo <<< unsafePartial $ fromJust $ fromList vs
 
-nextTo :: forall a. NonEmptyList (VVis a) -> VVis a
-nextTo = NextTo
+-- | An _unsafe_ helper function (when the parameter list is empty) for
+-- | composing with `Above`.
+above :: forall a. List (VVis a) -> VVis a
+above vs = Above <<< unsafePartial $ fromJust $ fromList vs
