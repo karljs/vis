@@ -1,12 +1,12 @@
 module VisColor
-  ( background
-  , foreground
+  ( makeDimColors
   ) where
 
-import CSS (Color, rgb)
+import Color (Color)
+import Color.Scale (colors, spectrumLCh)
+import Data.List (List)
+import Data.List.Lazy (take)
+import Prelude ((+))
 
-background :: Color
-background = rgb 0 43 54
-
-foreground :: Color
-foreground = rgb 253 246 227
+makeDimColors :: Int -> List Color
+makeDimColors n = colors spectrumLCh (n + 1)

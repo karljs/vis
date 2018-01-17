@@ -16,7 +16,8 @@
     "purescript-canvas": "^3.3.0",
     "purescript-halogen-css": "^7.0.0",
     "purescript-css": "^3.3.0",
-    "purescript-debug": "^3.0.0"
+    "purescript-debug": "^3.0.0",
+    "purescript-colors": "^4.3.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",

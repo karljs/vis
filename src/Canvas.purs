@@ -11,8 +11,10 @@ import Control.Monad.Eff (Eff)
 import DOM.HTML (window)
 import DOM.HTML.Window (innerHeight, innerWidth)
 import Data.Int (toNumber)
+import Data.Map (empty)
 import Data.Maybe (Maybe(..), maybe)
 import Data.NonEmpty (singleton)
+import Data.Tuple (Tuple(..))
 import Graphics.Canvas (CanvasElement, Context2D, clearRect, scale)
 import Graphics.Canvas as C
 import Halogen as H
@@ -21,7 +23,7 @@ import Halogen.HTML.CSS (style, stylesheet)
 import Halogen.HTML.Events (input)
 import Halogen.HTML.Properties as HP
 import Prelude (type (~>), Unit, Void, bind, const, discard, id, pure, ($), (*), (-), (/))
-import UI (uiComponent)
+import UI (DecisionColors, uiComponent)
 import UI.Types (UIQuery(..), UIMessage(..))
 import V (Decision, emptyDec)
 import Vis (VVis)
@@ -63,20 +65,22 @@ cComponent =
       H.ParentDSL (CState Number) CQuery UIQuery UISlot Void (Aff (CEffects m))
   eval = case _ of
     Render next -> do
-      mdec <- H.query UISlot $ H.request ViewDec
+      mtup <- H.query UISlot $ H.request ViewDec
+      let (Tuple dec cs) = maybe (Tuple empty empty) id mtup
       mcan <- H.liftEff $ C.getCanvasElementById "draw"
       case mcan of
         Just can -> do
           s <- H.get
-          _ <- H.liftEff (renderVisInit can (maybe emptyDec id mdec) s.currVis)
+          _ <- H.liftEff (renderVisInit can dec cs s.currVis)
+          -- _ <- H.liftEff (renderVisInit can (emptyDec) s.currVis)
           pure next
         Nothing -> pure next
-    Changed (Toggled dec) next -> do
+    Changed (Toggled dec cs) next -> do
       mcan <- H.liftEff $ C.getCanvasElementById "draw"
       case mcan of
         Just can -> do
           s <- H.get
-          _ <- H.liftEff (renderVis can dec s.currVis)
+          _ <- H.liftEff (renderVis can dec cs s.currVis)
           pure next
         Nothing -> pure next
 
@@ -86,14 +90,15 @@ cComponent =
 renderVis :: forall m.
   CanvasElement ->
   Decision ->
+  DecisionColors ->
   VVis Number ->
   Eff (CEffects m) Context2D
-renderVis can dec vis = do
+renderVis can dec cs vis = do
   w <- C.getCanvasWidth can
   h <- C.getCanvasHeight can
   ctx <- C.getContext2D can
   _ <- clearRect ctx { x: 0.0, y: 0.0, w: w / 2.0, h: h / 2.0}
-  _ <- parseVis ctx dec vis
+  _ <- parseVis ctx dec cs vis
          (Cartesian (Rectangle { x: 0.0, y: 0.0, w: w / 2.0, h: h / 2.0}))
   pure ctx
 
@@ -102,9 +107,10 @@ renderVis can dec vis = do
 renderVisInit :: forall m.
   CanvasElement ->
   Decision ->
+  DecisionColors ->
   VVis Number ->
   Eff (CEffects m) Context2D
-renderVisInit can dec vis = do
+renderVisInit can dec col vis = do
   win <- window
   w <- innerWidth win
   h <- innerHeight win
@@ -114,7 +120,7 @@ renderVisInit can dec vis = do
   _ <- C.setCanvasWidth (w' * 2.0) can
   ctx <- C.getContext2D can
   _ <- scale { scaleX: 2.0, scaleY: 2.0 } ctx
-  _ <- parseVis ctx dec vis
+  _ <- parseVis ctx dec col vis
          (Cartesian (Rectangle { x: 0.0, y: 0.0, w: w', h: h'}))
   pure ctx
 

@@ -6,41 +6,46 @@ module Canvas.Drawing
   ) where
 
 import Canvas.Types (CEffects, Rectangle(..), Space(..))
+import Color (Color, black, toHexString, white)
 import Control.Monad.Eff (Eff)
 import Data.Foldable (sequence_)
 import Data.Int (toNumber)
 import Data.List (List(..), zipWith, (:))
 import Data.List.NonEmpty (length, toList)
+import Data.Map (lookup)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
-import Graphics.Canvas (Context2D, fillRect, setFillStyle, setLineWidth, setStrokeStyle, strokeRect)
+import Graphics.Canvas (Context2D, clearRect, fillRect, setFillStyle, setLineWidth, setStrokeStyle, strokeRect)
 import Prelude (bind, discard, pure, ($), (*), (+), (-), (/), (>=))
+import UI (DecisionColors)
 import V (Decision, Dir(..), lookupDim)
 import Vis.Types (Frame(..), VVis(..))
-
 
 parseVis :: forall m.
   Context2D ->
   Decision ->
+  DecisionColors ->
   VVis Number ->
   Space ->
   Eff (CEffects m) Context2D
-parseVis ctx dec (NextTo vs) (Cartesian r) = do
+parseVis ctx dec cs (NextTo vs) (Cartesian r) = do
   let bs = splitBoxH r (length vs)
-  sequence_ $ zipWith (parseVis ctx dec) (toList vs) bs
+  sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) bs
   pure ctx
-parseVis ctx dec (Above vs) (Cartesian r) = do
+parseVis ctx dec cs (Above vs) (Cartesian r) = do
   let bs = splitBoxV r (length vs)
-  sequence_ $ zipWith (parseVis ctx dec) (toList vs) bs
+  sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) bs
   pure ctx
-parseVis ctx dec (Fill v f) (Cartesian r) = do
+parseVis ctx dec cs (Fill v f) (Cartesian r) = do
   drawBox ctx v r f
-parseVis ctx dec (V d l r) sp = do
-  _ <- drawOutline ctx sp
+parseVis ctx dec cs (V d l r) sp = do
+  _ <- case lookup d cs of
+         Just col -> drawVHint ctx col sp
+         _ -> drawVHint ctx black sp
   case lookupDim d dec of
-    Just L -> parseVis ctx dec l sp
-    Just R -> parseVis ctx dec r sp
-    _      -> parseVis ctx dec l sp
+    Just L -> parseVis ctx dec cs l sp
+    Just R -> parseVis ctx dec cs r sp
+    _      -> parseVis ctx dec cs l sp
 
 splitBoxH :: Rectangle -> Int -> List Space
 splitBoxH _ 0 = Nil
@@ -73,15 +78,14 @@ drawBox c v' (Rectangle r) (Frame f) = do
       _ <- fillRect c { x: r.x , y: z , w: r.w , h: v - z }
       strokeRect c { x: r.x , y: z , w: r.w , h: v - z }
 
-drawOutline :: forall m. Context2D -> Space -> Eff (CEffects m) Context2D
-drawOutline ctx (Cartesian r) = drawOutlineRect ctx r
+drawVHint :: forall m. Context2D -> Color -> Space -> Eff (CEffects m) Context2D
+drawVHint ctx col (Cartesian r) = drawHintRect ctx col r
 
-drawOutlineRect :: forall m.
-  Context2D -> Rectangle -> Eff (CEffects m) Context2D
-drawOutlineRect ctx (Rectangle r) = do
-  _ <- setFillStyle "#dddddd" ctx
+drawHintRect :: forall m.
+  Context2D -> Color -> Rectangle -> Eff (CEffects m) Context2D
+drawHintRect ctx col (Rectangle r) = do
   _ <- setStrokeStyle "#ffffff" ctx
-  _ <- setLineWidth 2.0 ctx
+  _ <- setFillStyle (toHexString col) ctx
   _ <- fillRect ctx r
   strokeRect ctx r
 

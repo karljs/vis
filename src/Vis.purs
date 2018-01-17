@@ -2,6 +2,7 @@ module Vis
   ( module Vis.Types
   , selectVis
   , selectVisM
+  , visDims
   , visInitDec
   ) where
 
