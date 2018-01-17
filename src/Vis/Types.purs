@@ -1,17 +1,20 @@
 module Vis.Types
   ( Frame(..)
-  , Rectangle
   , VVis(..)
   , above
+  , above'
   , fills
   , nextTo
+  , nextTo'
   ) where
 
-import Data.List.NonEmpty (fromList)
-import Data.List.Types (List, NonEmptyList)
+import Data.Array (toUnfoldable)
+import Data.List.NonEmpty (NonEmptyList, foldr, fromList)
+import Data.List (List)
 import Data.Maybe (fromJust)
+import Data.Show (class Show, show)
 import Partial.Unsafe (unsafePartial)
-import Prelude (map, ($), (<<<))
+import Prelude (map, ($), (<<<), (<>))
 import Util (vmaximum, vminimum)
 import V (Dim, V(..))
 
@@ -22,6 +25,14 @@ data VVis a
   | NextTo (NonEmptyList (VVis a))
   | Above (NonEmptyList (VVis a))
 
+instance showVVis :: Show a => Show (VVis a) where
+  show (Fill v f) = "Fill " <> show v
+  show (V d l r) = "V " <> d <> " " <> show l <> " " <> show r
+  show (NextTo vs) =
+    "NextTo\n" <> (foldr (\v vs -> (v <> "\n" <> vs)) "\n" (map show vs))
+  show (Above vs) =
+    "Above\n" <> (foldr (\v vs -> (v <> "\n" <> vs)) "\n" (map show vs))
+
 -- | A frame represents the context into which we map the values being charted.
 -- | Currently this just tracks the minimum and maximum values in a chart.
 data Frame a = Frame
@@ -29,12 +40,8 @@ data Frame a = Frame
   , frameMin :: a
   }
 
--- | A rectangle is represented as a top left corner plus a width and height.
-type Rectangle = { x :: Number
-                 , y :: Number
-                 , w :: Number
-                 , h :: Number
-                 }
+instance showFrame :: Show a => Show (Frame a) where
+  show (Frame f) = "Frame"
 
 -- | An _unsafe_ helper function (when the parameter list is empty) that takes a
 -- | list of variational numbers and produces a non-empty list of `Fill`
@@ -52,10 +59,18 @@ vFill f (Chc d l r) = V d (vFill f l) (vFill f r)
 
 -- | An _unsafe_ helper function (when the parameter list is empty) for
 -- | composing with `NextTo`.
-nextTo :: forall a. List (VVis a) -> VVis a
-nextTo vs = NextTo <<< unsafePartial $ fromJust $ fromList vs
+nextTo' :: forall a. List (VVis a) -> VVis a
+nextTo' vs = NextTo <<< unsafePartial $ fromJust $ fromList vs
+
+nextTo :: forall a. Array (VVis a) -> VVis a
+nextTo vs = nextTo' $ toUnfoldable vs
 
 -- | An _unsafe_ helper function (when the parameter list is empty) for
 -- | composing with `Above`.
-above :: forall a. List (VVis a) -> VVis a
-above vs = Above <<< unsafePartial $ fromJust $ fromList vs
+above' :: forall a. List (VVis a) -> VVis a
+above' vs = Above <<< unsafePartial $ fromJust $ fromList vs
+
+-- | An _unsafe_ helper function (when the parameter array is empty) for
+-- | composing with `Above`.
+above :: forall a. Array (VVis a) -> VVis a
+above vs = above' $ toUnfoldable vs

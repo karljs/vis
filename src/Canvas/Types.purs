@@ -1,23 +1,50 @@
 module Canvas.Types
-  ( CEffects
+  ( class Renderable
+  , CEffects
   , CInput
-  , CQuery (..)
+  , CQuery(..)
   , CState
-  , Space (..)
-  , UISlot (..)
+  , Drawing (..)
+  , Primitive(..)
+  , Rectangle(..)
+  , Space(..)
+  , UISlot(..)
+  , render
   ) where
 
 import UI.Types
 
 import DOM (DOM)
+import Data.List (List)
+import Data.Show (class Show, show)
 import Graphics.Canvas (CANVAS)
-import Prelude (class Eq, class Ord)
-import Vis.Types (Rectangle, VVis)
+import Prelude (class Eq, class Ord, (<>))
+import Vis.Types (VVis)
+
+class Renderable r where
+  render :: forall a. r a -> Drawing
+
+data Drawing = Drawing (List Primitive)
+
+data Primitive
+  = Box Rectangle
 
 -- | A type corresponding to a part of a canvas that we can render to, which
 -- | is used to partition the space as we match complicated visualizations.
 data Space
-  = Box Rectangle
+  = Cartesian Rectangle
+
+-- | A rectangle is represented as a top left corner plus a width and height.
+data Rectangle = Rectangle
+  { x :: Number
+  , y :: Number
+  , w :: Number
+  , h :: Number
+  }
+
+instance showRectangle :: Show Rectangle where
+  show (Rectangle r) = "Rectangle (" <> show r.x <> ", " <> show r.y <> ") "
+                                     <> show r.w <> " " <> show r.h
 
 
 --------------------------------------------------------------------------------

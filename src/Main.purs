@@ -1,4 +1,13 @@
-module Main where
+module Main
+  ( module V
+  , module Vis
+  , module Vis.Types
+  , go
+  , main
+  , v1
+  , v2
+  , vs
+  ) where
 
 import Canvas (cComponent)
 import Control.Monad.Eff (Eff)
@@ -12,7 +21,8 @@ import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 import Prelude (Unit, bind, negate, ($))
 import V (V(..))
-import Vis.Types (VVis(..), fills)
+import Vis
+import Vis.Types (Frame(..), VVis(..), above, above', fills, nextTo, nextTo')
 
 main :: Eff (HA.HalogenEffects (canvas :: CANVAS)) Unit
 main = HA.runHalogenAff do
@@ -36,11 +46,11 @@ go vis = HA.runHalogenAff do
   runUI cComponent vis body
 
 --------------------------------------------------------------------------------
--- Some test values for chartin
+-- Some test values for charting
 
 vs :: List (V Number)
-vs = One 8.1 : Chc "My Dim" (One (-3.0)) (One 8.0) : One 2.3 : One (-5.2) :
-     One 1.3 : Chc "My Dim" (One 3.4) (One 4.2) : Nil
+vs = One 8.1 : Chc "Dim1" (One (-3.0)) (One 8.0) : One 2.3 : One (-5.2) :
+     One 1.3 : Chc "Dim2" (One 3.4) (One 4.2) : Nil
 
 v1 :: VVis Number
 v1 = NextTo $ fills vs

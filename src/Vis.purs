@@ -10,7 +10,7 @@ import Data.List.NonEmpty (toList)
 import Data.Maybe (Maybe(..), maybe)
 import Prelude (flip, map, (<>))
 import V (Decision, Dim, Dir(..), leftDec, lookupDim)
-import Vis.Types (Rectangle, VVis(..))
+import Vis.Types (VVis(..))
 
 -- | Select with a maybe `Decision`.
 selectVisM :: Maybe Decision -> VVis Number -> VVis Number
@@ -37,4 +37,3 @@ visDims (Fill _ _) = Nil
 visDims (V d l r) = d : visDims l <> visDims r
 visDims (NextTo vs) = concatMap visDims (toList vs)
 visDims (Above vs) = concatMap visDims (toList vs)
-
