@@ -25,7 +25,7 @@ import Halogen.HTML.Properties as HP
 import Prelude (type (~>), Unit, Void, bind, const, discard, id, pure, ($), (*), (-), (/))
 import UI (DecisionColors, uiComponent)
 import UI.Types (UIQuery(..), UIMessage(..))
-import V (Decision, emptyDec)
+import V (Decision)
 import Vis (VVis)
 
 -- | The main canvas parent component which represents the bulk of the application.
@@ -72,7 +72,6 @@ cComponent =
         Just can -> do
           s <- H.get
           _ <- H.liftEff (renderVisInit can dec cs s.currVis)
-          -- _ <- H.liftEff (renderVisInit can (emptyDec) s.currVis)
           pure next
         Nothing -> pure next
     Changed (Toggled dec cs) next -> do
@@ -99,7 +98,11 @@ renderVis can dec cs vis = do
   ctx <- C.getContext2D can
   _ <- clearRect ctx { x: 0.0, y: 0.0, w: w / 2.0, h: h / 2.0}
   _ <- parseVis ctx dec cs vis
-         (Cartesian (Rectangle { x: 0.0, y: 0.0, w: w / 2.0, h: h / 2.0}))
+         (Cartesian (Rectangle { x: 4.0
+                               , y: 4.0
+                               , w: w / 2.0 - 8.0
+                               , h: h / 2.0 - 8.0
+                               }))
   pure ctx
 
 -- | The same as renderVis, but do some setup things that should only occur
@@ -116,12 +119,15 @@ renderVisInit can dec col vis = do
   h <- innerHeight win
   let h' = 2.0 * toNumber h - 20.0
       w' = 1.4 * toNumber w - 20.0
-  _ <- C.setCanvasHeight (h' * 2.0) can
-  _ <- C.setCanvasWidth (w' * 2.0) can
+  _ <- C.setCanvasHeight can (h' * 2.0)
+  _ <- C.setCanvasWidth can (w' * 2.0)
   ctx <- C.getContext2D can
-  _ <- scale { scaleX: 2.0, scaleY: 2.0 } ctx
+  _ <- scale ctx { scaleX: 2.0, scaleY: 2.0 }
   _ <- parseVis ctx dec col vis
-         (Cartesian (Rectangle { x: 0.0, y: 0.0, w: w', h: h'}))
+         (Cartesian (Rectangle { x: 4.0
+                               , y: 4.0
+                               , w: w' - 8.0
+                               , h: h' - 8.0}))
   pure ctx
 
 --------------------------------------------------------------------------------
@@ -147,4 +153,6 @@ containerStyle = do
   fontFamily ["helvetica"] (singleton sansSerif)
 
 bodyStyle :: StyleM Unit
-bodyStyle = select body $ margin nil nil nil nil
+bodyStyle = do
+  select body $ margin nil nil nil nil
+  overflow hidden

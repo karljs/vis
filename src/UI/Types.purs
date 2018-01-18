@@ -9,7 +9,7 @@ module UI.Types
 
 import Color (Color)
 import Data.List (List, zip)
-import Data.Map (Map, empty, fromFoldable)
+import Data.Map (Map, fromFoldable)
 import Data.Tuple (Tuple)
 import V (Decision, Dim)
 import Vis (VVis)

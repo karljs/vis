@@ -1,12 +1,11 @@
 module UI (module UI.Types, uiComponent) where
 
-import CSS (StyleM, background, backgroundColor, black, bold, border, display, float, floatRight, fontWeight, height, inlineBlock, margin, marginBottom, marginRight, marginTop, pct, px, red, solid, white, width)
+import CSS (StyleM, background, backgroundColor, bold, border, display, float, floatRight, fontWeight, height, inlineBlock, margin, marginBottom, marginRight, marginTop, pct, px, solid, white, width)
 import Color (Color, black)
-import Data.Array (foldr, (:))
+import Data.Array ((:))
 import Data.Foldable (length)
-import Data.List (List, toUnfoldable, zipWith)
-import Data.List.Lazy (zip)
-import Data.Map (fromFoldable, insert, keys, lookup)
+import Data.List (toUnfoldable)
+import Data.Map (lookup)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Halogen as H
@@ -16,7 +15,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Prelude (type (~>), Unit, bind, const, discard, map, pure)
 import UI.Types (UIInput, UIMessage(..), UIQuery(..), UIState, DecisionColors, mkDecColors)
-import V (Dim, Decision, decDims, showDec, toggleDim)
+import V (Dim, decDims, showDec, toggleDim)
 import Vis (VVis, visDims, visInitDec)
 import VisColor (makeDimColors)
 

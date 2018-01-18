@@ -4,7 +4,7 @@ module Canvas.Types
   , CInput
   , CQuery(..)
   , CState
-  , Drawing (..)
+  , Drawing(..)
   , Primitive(..)
   , Rectangle(..)
   , Space(..)
@@ -12,16 +12,12 @@ module Canvas.Types
   , render
   ) where
 
-import Color (Color)
 import DOM (DOM)
 import Data.List (List)
-import Data.Map (Map)
 import Data.Show (class Show, show)
-import Data.Tuple (Tuple(..))
 import Graphics.Canvas (CANVAS)
 import Prelude (class Eq, class Ord, (<>))
 import UI.Types (UIMessage)
-import V.Types (Dim, Dir)
 import Vis.Types (VVis)
 
 class Renderable r where
