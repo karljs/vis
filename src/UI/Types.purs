@@ -34,9 +34,14 @@ data UIQuery a
 -- | can extract a default view decision.
 type UIInput a = VVis a
 
+-- | When a change is made to the view decision, send a message with the new
+-- | decision and the decision colors.
 data UIMessage = Toggled Decision DecisionColors
 
+-- | A mapping from dimensions to colors, which helps map parts of the canvas to
+-- | the actual dimension names in the UI.
 type DecisionColors = Map Dim Color
 
+-- | From (ordered) lists of dimensions and colors, produce a proper mapping.
 mkDecColors :: List Dim -> List Color -> DecisionColors
 mkDecColors ds cs = fromFoldable (zip ds cs)

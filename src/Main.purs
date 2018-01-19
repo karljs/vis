@@ -21,7 +21,7 @@ import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 import Prelude (Unit, bind, negate, ($))
 import V (V(..))
-import Vis
+import Vis (reorient, rotate)
 import Vis.Types (Frame(..), VVis(..), above, fillsH, fillsV, nextTo)
 
 main :: Eff (HA.HalogenEffects (canvas :: CANVAS)) Unit

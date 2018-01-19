@@ -1,5 +1,8 @@
 module Vis.Types
   ( Frame(..)
+  , Label(..)
+  , LabelPositionH(..)
+  , LabelPositionV(..)
   , Orientation(..)
   , VVis(..)
   , above
@@ -13,8 +16,9 @@ module Vis.Types
 import Data.Array (toUnfoldable)
 import Data.List (List)
 import Data.List.NonEmpty (NonEmptyList, foldr, fromList)
-import Data.Maybe (fromJust)
+import Data.Maybe (Maybe(..), fromJust)
 import Data.Show (class Show, show)
+import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 import Prelude (flip, map, ($), (<<<), (<>))
 import Util (vmaximum, vminimum)
@@ -22,18 +26,25 @@ import V (Dim, V(..))
 
 -- | The primary type of a visualization
 data VVis a
-  = Fill a (Frame a) Orientation
+  = Fill { fillVal :: a
+         , fillFrame :: Frame a
+         , fillOrientation :: Orientation
+         , fillLabel :: Maybe Label
+         }
   | V Dim (VVis a) (VVis a)
   | NextTo (NonEmptyList (VVis a))
   | Above (NonEmptyList (VVis a))
 
 instance showVVis :: Show a => Show (VVis a) where
-  show (Fill v f o) = "Fill " <> show v <> " " <> show o
+  show (Fill f) = "Fill " <> show f.fillVal
+                          <> " " <> show f.fillFrame
+                          <> " " <> show f.fillOrientation
+                          <> " label " <> show f.fillLabel
   show (V d l r) = "V " <> d <> " " <> show l <> " " <> show r
   show (NextTo vs) =
-    "NextTo\n" <> (foldr (\v vs -> (v <> "\n" <> vs)) "\n" (map show vs))
+    "NextTo\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
   show (Above vs) =
-    "Above\n" <> (foldr (\v vs -> (v <> "\n" <> vs)) "\n" (map show vs))
+    "Above\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
 
 -- | A frame represents the context into which we map the values being charted.
 -- | Currently this just tracks the minimum and maximum values in a chart.
@@ -52,6 +63,26 @@ data Orientation
 instance showOrientation :: Show Orientation where
   show OrientVertical = "Vertical"
   show OrientHorizontal = "Horizontal"
+
+--------------------------------------------------------------------------------
+-- Everything to do with labels
+
+data Label = Label
+  { labelText :: String
+  , labelPosition :: Tuple LabelPositionV LabelPositionH
+  , labelSize :: Number
+  }
+
+instance showLabel :: Show Label where
+  show (Label l) = l.labelText <> " " <> show l.labelSize
+
+data LabelPositionV = VPosTop | VPosMiddle | VPosBottom
+
+data LabelPositionH = HPosLeft | HPosMiddle | HPosRight
+
+
+--------------------------------------------------------------------------------
+-- Helper functions for (mostly unsafely) constructing nonempty lists of things
 
 -- | An _unsafe_ helper function (when the parameter list is empty) that takes a
 -- | list of variational numbers and produces a non-empty list of `Fill`
@@ -73,8 +104,18 @@ fillsH = flip fills OrientHorizontal
 
 -- | For a variational number, product a `Fill` visualization.
 vFill :: Frame Number -> Orientation -> V Number -> VVis Number
-vFill f o (One v) = Fill v f o
+vFill f o (One v) =
+  Fill { fillVal: v
+       , fillFrame: f
+       , fillOrientation: o
+       , fillLabel: Just (defaultLabel v)
+       }
 vFill f o (Chc d l r) = V d (vFill f o l) (vFill f o r)
+
+defaultLabel :: forall a. Show a => a -> Label
+defaultLabel v = Label { labelText: show v
+                       , labelPosition: Tuple VPosTop HPosMiddle
+                       , labelSize: 36.0 }
 
 -- | An _unsafe_ helper function (when the parameter list is empty) for
 -- | composing with `NextTo`.
