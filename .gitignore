@@ -9,3 +9,4 @@ node_modules
 .purs-repl
 output
 *.js
+.psc-ide-port
