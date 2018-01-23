@@ -20,35 +20,39 @@ import Data.Maybe (Maybe(..), fromJust)
 import Data.Show (class Show, show)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
-import Prelude (flip, map, ($), (<<<), (<>))
+import Prelude (class Eq, flip, map, ($), (<<<), (<>))
 import Util (vmaximum, vminimum)
 import V (Dim, V(..))
 
 -- | The primary type of a visualization
 data VVis a
-  = Fill { fillVal :: a
-         , fillFrame :: Frame a
-         , fillOrientation :: Orientation
-         , fillLabel :: Maybe Label
+  = Fill { val :: a
+         , frame :: Frame a
+         , orientation :: Orientation
+         , label :: Maybe Label
          }
   | V Dim (VVis a) (VVis a)
-  | NextTo (NonEmptyList (VVis a))
-  | Above (NonEmptyList (VVis a))
+  | NextTo { orientation :: Orientation
+           , vs :: (NonEmptyList (VVis a))
+           }
+  | Above { orientation :: Orientation
+          , vs :: (NonEmptyList (VVis a))
+          }
   | MkCartesian (VVis a)
   | MkPolar (VVis a)
 
 instance showVVis :: Show a => Show (VVis a) where
-  show (Fill f) = "Fill " <> show f.fillVal
-                          <> " " <> show f.fillFrame
-                          <> " " <> show f.fillOrientation
-                          <> " label " <> show f.fillLabel
+  show (Fill f) = "Fill " <> show f.val <> " "
+                          <> show f.frame <> " "
+                          <> show f.orientation <> " label "
+                          <> show f.label
   show (V d l r) = "V " <> d <> " " <> show l <> " " <> show r
-  show (NextTo vs) =
-    "NextTo\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
-  show (Above vs) =
-    "Above\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
-  show (MkCartesian v) = "Cartesian " <> show v
-  show (MkPolar v) = "Polar " <> show v
+  show (NextTo v) =
+    "NextTo\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show v.vs))
+  show (Above v) =
+    "Above\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show v.vs))
+  show (MkCartesian v) = "Cartesian\n" <> show v
+  show (MkPolar v) = "Polar\n" <> show v
 
 -- | A frame represents the context into which we map the values being charted.
 -- | Currently this just tracks the minimum and maximum values in a chart.
@@ -68,17 +72,22 @@ instance showOrientation :: Show Orientation where
   show OrientVertical = "Vertical"
   show OrientHorizontal = "Horizontal"
 
+instance eqOrientation :: Eq Orientation where
+  eq OrientVertical OrientVertical = true
+  eq OrientHorizontal OrientHorizontal = true
+  eq _ _ = false
+
 --------------------------------------------------------------------------------
 -- Everything to do with labels
 
 data Label = Label
-  { labelText :: String
-  , labelPosition :: Tuple LabelPositionV LabelPositionH
-  , labelSize :: Number
+  { text :: String
+  , position :: Tuple LabelPositionV LabelPositionH
+  , size :: Number
   }
 
 instance showLabel :: Show Label where
-  show (Label l) = l.labelText <> " " <> show l.labelSize
+  show (Label l) = "Label: " <> l.text <> " " <> show l.size
 
 data LabelPositionV = VPosTop | VPosMiddle | VPosBottom
 
@@ -109,22 +118,24 @@ fillsH = flip fills OrientHorizontal
 -- | For a variational number, product a `Fill` visualization.
 vFill :: Frame Number -> Orientation -> V Number -> VVis Number
 vFill f o (One v) =
-  Fill { fillVal: v
-       , fillFrame: f
-       , fillOrientation: o
-       , fillLabel: Just (defaultLabel v)
+  Fill { val: v
+       , frame: f
+       , orientation: o
+       , label: Just (defaultLabel v)
        }
 vFill f o (Chc d l r) = V d (vFill f o l) (vFill f o r)
 
 defaultLabel :: forall a. Show a => a -> Label
-defaultLabel v = Label { labelText: show v
-                       , labelPosition: Tuple VPosTop HPosMiddle
-                       , labelSize: 36.0 }
+defaultLabel v = Label { text: show v
+                       , position: Tuple VPosTop HPosMiddle
+                       , size: 36.0 }
 
 -- | An _unsafe_ helper function (when the parameter list is empty) for
 -- | composing with `NextTo`.
 nextTo' :: forall a. List (VVis a) -> VVis a
-nextTo' vs = NextTo <<< unsafePartial $ fromJust $ fromList vs
+nextTo' vs = NextTo { orientation: OrientVertical
+                    , vs: unsafePartial $ fromJust $ fromList vs
+                    }
 
 nextTo :: forall a. Array (VVis a) -> VVis a
 nextTo vs = nextTo' $ toUnfoldable vs
@@ -132,7 +143,9 @@ nextTo vs = nextTo' $ toUnfoldable vs
 -- | An _unsafe_ helper function (when the parameter list is empty) for
 -- | composing with `Above`.
 above' :: forall a. List (VVis a) -> VVis a
-above' vs = Above <<< unsafePartial $ fromJust $ fromList vs
+above' vs = Above { orientation: OrientHorizontal
+                  , vs: unsafePartial $ fromJust $ fromList vs
+                  }
 
 -- | An _unsafe_ helper function (when the parameter array is empty) for
 -- | composing with `Above`.

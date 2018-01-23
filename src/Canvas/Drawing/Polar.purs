@@ -1,5 +1,6 @@
 module Canvas.Drawing.Polar
   ( drawHintWedge
+  , drawWedgeH
   , drawWedgeV
   ) where
 
@@ -13,6 +14,16 @@ import Math (cos, sin)
 import Prelude (Unit, discard, pure, unit, (*), (+), (<>), (>=))
 import Util (convertRange)
 import Vis.Types (Frame(..), Label(..))
+
+drawWedgeH :: forall m.
+  Context2D ->
+  Number ->
+  Wedge ->
+  Frame Number ->
+  Maybe Label ->
+  Eff (CEffects m) Unit
+drawWedgeH ctx v' (Wedge w) (Frame f) ml = do
+  pure unit
 
 drawWedgeV :: forall m.
   Context2D ->
@@ -60,6 +71,8 @@ drawHintWedge ctx col w = do
 --------------------------------------------------------------------------------
 -- Wedge drawing functions that I wish were implemented for me
 
+-- | Stroke the outline of a wedge shape, which is something like a piece of a
+-- | doughnut.
 strokeWedge :: forall m. Context2D -> Wedge -> Eff (CEffects m) Unit
 strokeWedge ctx (Wedge w) = do
   let p1x = (cos w.startAngle) * w.inRad + w.x
@@ -86,6 +99,7 @@ strokeWedge ctx (Wedge w) = do
           }
   stroke ctx
 
+-- | Fill a wedge shape, which is something like a piece of a doughnut.
 fillWedge :: forall m. Context2D -> Wedge -> Eff (CEffects m) Unit
 fillWedge ctx (Wedge w) = do
   let p1x = (cos w.startAngle) * w.inRad + w.x

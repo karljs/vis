@@ -81,7 +81,7 @@ drawLabelVP :: forall m.
 drawLabelVP ctx (Label l) (Rectangle r) = do
   setTextAlign ctx AlignCenter
   let tx = r.x + (r.w / 2.0)
-      ty = r.y + l.labelSize
+      ty = r.y + l.size
   drawLabelCommon ctx tx ty (Label l)
 
 -- | Draw the label for a vertically oriented, negative valued bar.
@@ -90,7 +90,7 @@ drawLabelVN :: forall m.
 drawLabelVN ctx (Label l) (Rectangle r) = do
   setTextAlign ctx AlignCenter
   let tx = r.x + (r.w / 2.0)
-      ty = r.y + r.h - (l.labelSize / 1.8)
+      ty = r.y + r.h - (l.size / 1.8)
   drawLabelCommon ctx tx ty (Label l)
 
 -- | Draw the label for a horizontally oriented, positive valued bar.
@@ -98,8 +98,8 @@ drawLabelHP :: forall m.
   Context2D -> Label -> Rectangle -> Eff (CEffects m) Unit
 drawLabelHP ctx (Label l) (Rectangle r) = do
   setTextAlign ctx AlignRight
-  let tx = r.x + r.w - (l.labelSize / 1.8)
-      ty = r.y + ((r.h + l.labelSize) / 2.0)
+  let tx = r.x + r.w - (l.size / 1.8)
+      ty = r.y + ((r.h + l.size) / 2.0)
   drawLabelCommon ctx tx ty (Label l)
 
 -- | Draw the label for a horizontally oriented, negative valued bar.
@@ -107,8 +107,8 @@ drawLabelHN :: forall m.
   Context2D -> Label -> Rectangle -> Eff (CEffects m) Unit
 drawLabelHN ctx (Label l) (Rectangle r) = do
   setTextAlign ctx AlignLeft
-  let tx = r.x + (l.labelSize / 1.8)
-      ty = r.y + ((r.h + l.labelSize) / 2.0)
+  let tx = r.x + (l.size / 1.8)
+      ty = r.y + ((r.h + l.size) / 2.0)
   drawLabelCommon ctx tx ty (Label l)
 
 -- | Handle all of the label drawing parts that are common regardless of
@@ -116,11 +116,11 @@ drawLabelHN ctx (Label l) (Rectangle r) = do
 drawLabelCommon :: forall m.
   Context2D -> Number -> Number -> Label -> Eff (CEffects m) Unit
 drawLabelCommon ctx tx ty (Label l) = do
-  setFont ctx ("bold " <> show l.labelSize <> "px sans-serif" )
+  setFont ctx ("bold " <> show l.size <> "px sans-serif" )
   setFillStyle ctx "#ffffff"
   setStrokeStyle ctx "#000000"
-  fillText ctx l.labelText tx ty
-  strokeText ctx l.labelText tx ty
+  fillText ctx l.text tx ty
+  strokeText ctx l.text tx ty
 
 -- | Draw a hint suggesting variability in a rectangular space
 drawHintRect :: forall m.

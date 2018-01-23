@@ -11,25 +11,25 @@ module Vis
 import Data.List (List(..), concatMap, (:))
 import Data.List.NonEmpty (toList)
 import Data.Maybe (Maybe(..), maybe)
-import Prelude (flip, map, ($), (<>))
+import Prelude (flip, map, (<>))
 import V (Decision, Dim, Dir(..), leftDec, lookupDim)
 import Vis.Types (Orientation(..), VVis(..))
 
 -- | Change the orientation between vertical and horizontal, or angle and radius
 reorient :: forall a. VVis a -> VVis a
 reorient (Fill f) =
-  Fill (f { fillOrientation = swapOrientation f.fillOrientation })
+  Fill (f { orientation = swapOrientation f.orientation })
 reorient (V d l r) = V d (reorient l) (reorient r)
-reorient (NextTo vs) = NextTo $ map reorient vs
-reorient (Above vs) = Above $ map reorient vs
+reorient (NextTo v) = NextTo (v { vs = map reorient v.vs })
+reorient (Above v) = Above (v { vs = map reorient v.vs })
 reorient (MkCartesian v) = MkCartesian (reorient v)
 reorient (MkPolar v) = MkPolar (reorient v)
 
 rotate :: forall a. VVis a -> VVis a
 rotate (Fill f) = Fill f
 rotate (V d l r) = V d (rotate l) (rotate r)
-rotate (NextTo vs) = Above (map rotate vs)
-rotate (Above vs) = NextTo (map rotate vs)
+rotate (NextTo v) = Above (v { vs = map rotate v.vs })
+rotate (Above v) = NextTo (v { vs = map rotate v.vs })
 rotate (MkCartesian v) = MkCartesian (rotate v)
 rotate (MkPolar v) = MkPolar (rotate v)
 
@@ -48,8 +48,8 @@ selectVis dec (V d l r) = case lookupDim d dec of
   Just L -> selectVis dec l
   Just R -> selectVis dec r
   Nothing -> V d (selectVis dec l) (selectVis dec r)
-selectVis dec (NextTo vs) = NextTo (map (selectVis dec) vs)
-selectVis dec (Above vs) = Above (map (selectVis dec) vs)
+selectVis dec (NextTo v) = NextTo (v { vs = map (selectVis dec) v.vs })
+selectVis dec (Above v) = Above (v { vs = map (selectVis dec) v.vs })
 selectVis dec (MkCartesian v) = MkCartesian (selectVis dec v)
 selectVis dec (MkPolar v) = MkPolar (selectVis dec v)
 
@@ -62,7 +62,7 @@ visInitDec v = leftDec (visDims v)
 visDims :: forall a. VVis a -> List Dim
 visDims (Fill _) = Nil
 visDims (V d l r) = d : visDims l <> visDims r
-visDims (NextTo vs) = concatMap visDims (toList vs)
-visDims (Above vs) = concatMap visDims (toList vs)
+visDims (NextTo v) = concatMap visDims (toList v.vs)
+visDims (Above v) = concatMap visDims (toList v.vs)
 visDims (MkCartesian v) = visDims v
 visDims (MkPolar v) = visDims v
