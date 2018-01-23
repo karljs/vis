@@ -72,6 +72,9 @@ drawBarH ctx v' (Rectangle r) (Frame f) ml = do
               Just l -> drawLabelHN ctx l (Rectangle rect)
               Nothing -> pure unit
 
+--------------------------------------------------------------------------------
+-- Functions for drawing labels
+
 -- | Draw the label for a vertically oriented, positive valued bar.
 drawLabelVP :: forall m.
   Context2D -> Label -> Rectangle -> Eff (CEffects m) Unit

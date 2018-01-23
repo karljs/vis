@@ -13,7 +13,7 @@ module Canvas.Drawing
   , toWedge
   ) where
 
-import Canvas.Drawing.Polar (drawHintWedge)
+import Canvas.Drawing.Polar (drawHintWedge, drawWedgeV)
 import Canvas.Drawing.Rectangular (drawBarH, drawBarV, drawHintRect)
 import Canvas.Types (CEffects, Rectangle(..), Space(..), Wedge(..))
 import Color (Color, black)
@@ -68,8 +68,10 @@ parseVis ctx dec cs (Fill f) (Cartesian r) =
   case f.fillOrientation of
     OrientVertical -> drawBarV ctx f.fillVal r f.fillFrame f.fillLabel
     OrientHorizontal -> drawBarH ctx f.fillVal r f.fillFrame f.fillLabel
-parseVis ctx dec cs (Fill f) (Polar w) = pure unit
-
+parseVis ctx dec cs (Fill f) (Polar w) =
+  case f.fillOrientation of
+    OrientVertical -> drawWedgeV ctx f.fillVal w f.fillFrame f.fillLabel
+    OrientHorizontal -> pure unit -- drawWedgeV ctx f.fillVal r f.fillFrame f.fillLabel
 
 -- | Draw some visual indicator that part of a chart contains variability.
 drawVHint :: forall m. Context2D -> Color -> Space -> Eff (CEffects m) Unit
