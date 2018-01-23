@@ -1,5 +1,6 @@
 module Vis
   ( module Vis.Types
+  , flop
   , reorient
   , rotate
   , selectVis
@@ -11,9 +12,12 @@ module Vis
 import Data.List (List(..), concatMap, (:))
 import Data.List.NonEmpty (toList)
 import Data.Maybe (Maybe(..), maybe)
-import Prelude (flip, map, (<>))
+import Prelude (flip, map, (<<<), (<>))
 import V (Decision, Dim, Dir(..), leftDec, lookupDim)
 import Vis.Types (Orientation(..), VVis(..))
+
+--------------------------------------------------------------------------------
+-- Transformations
 
 -- | Change the orientation between vertical and horizontal, or angle and radius
 reorient :: forall a. VVis a -> VVis a
@@ -28,21 +32,31 @@ reorient (Above v) = Above { orientation: swapOrientation v.orientation
 reorient (MkCartesian v) = MkCartesian (reorient v)
 reorient (MkPolar v) = MkPolar (reorient v)
 
+-- | Change the direction of composition
+flop :: forall a. VVis a -> VVis a
+flop (Fill f) = Fill f
+flop (V d l r) = V d (flop l) (flop r)
+flop (NextTo v) = Above (v { vs = map flop v.vs })
+flop (Above v) = NextTo (v { vs = map flop v.vs })
+flop (MkCartesian v) = MkCartesian (flop v)
+flop (MkPolar v) = MkPolar (flop v)
+
+-- | Flop and reorient
 rotate :: forall a. VVis a -> VVis a
-rotate (Fill f) = Fill f
-rotate (V d l r) = V d (rotate l) (rotate r)
-rotate (NextTo v) = Above (v { vs = map rotate v.vs })
-rotate (Above v) = NextTo (v { vs = map rotate v.vs })
-rotate (MkCartesian v) = MkCartesian (rotate v)
-rotate (MkPolar v) = MkPolar (rotate v)
+rotate = reorient <<< flop
 
 swapOrientation :: Orientation -> Orientation
 swapOrientation OrientVertical = OrientHorizontal
 swapOrientation OrientHorizontal = OrientVertical
 
+
+--------------------------------------------------------------------------------
+-- Things related to variability
+
 -- | Select with a maybe `Decision`.
 selectVisM :: Maybe Decision -> VVis Number -> VVis Number
 selectVisM md v = maybe v (flip selectVis v) md
+
 
 -- | Perform selection on a variational visualization.
 selectVis :: forall a. Decision -> VVis a -> VVis a

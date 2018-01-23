@@ -88,7 +88,7 @@ parseVis ctx dec cs (MkPolar v)     s = parseVis ctx dec cs v (toPolar s)
 parseVis ctx dec cs (Fill f) (Cartesian r) =
   case f.orientation of
     OrientVertical -> drawBarV ctx f.val r f.frame f.label
-    OrientHorizontal -> drawBarV ctx f.val r f.frame f.label
+    OrientHorizontal -> drawBarH ctx f.val r f.frame f.label
 parseVis ctx dec cs (Fill f) (Polar w) =
   case f.orientation of
     OrientVertical -> drawWedgeV ctx f.val w f.frame f.label
