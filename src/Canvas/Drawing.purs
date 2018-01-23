@@ -3,8 +3,17 @@ module Canvas.Drawing
 
   , splitBoxH
   , splitBoxV
+  , splitWedgeHEven
+  , splitWedgeHOdd
+  , splitWedgeV
+
+  , toCartesian
+  , toPolar
+  , toRectangle
+  , toWedge
   ) where
 
+import Canvas.Drawing.Polar (drawHintWedge)
 import Canvas.Drawing.Rectangular (drawBarH, drawBarV, drawHintRect)
 import Canvas.Types (CEffects, Rectangle(..), Space(..), Wedge(..))
 import Color (Color, black)
@@ -34,7 +43,9 @@ parseVis :: forall m.
 parseVis ctx dec cs (NextTo vs) (Cartesian r) = do
   let bs = splitBoxH r (length vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) bs
-parseVis ctx dec cs (NextTo vs) (Polar w) = pure unit
+parseVis ctx dec cs (NextTo vs) (Polar w) = do
+  let ws = splitWedgeHEven w (length vs)
+  sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) ws
 
 parseVis ctx dec cs (Above vs) (Cartesian r) = do
   let bs = splitBoxV r (length vs)
@@ -49,6 +60,7 @@ parseVis ctx dec cs (V d l r) sp = do
     Just L -> parseVis ctx dec cs l sp
     Just R -> parseVis ctx dec cs r sp
     _      -> parseVis ctx dec cs l sp
+
 parseVis ctx dec cs (MkCartesian v) s = parseVis ctx dec cs v (toCartesian s)
 parseVis ctx dec cs (MkPolar v)     s = parseVis ctx dec cs v (toPolar s)
 
@@ -62,7 +74,7 @@ parseVis ctx dec cs (Fill f) (Polar w) = pure unit
 -- | Draw some visual indicator that part of a chart contains variability.
 drawVHint :: forall m. Context2D -> Color -> Space -> Eff (CEffects m) Unit
 drawVHint ctx col (Cartesian r) = drawHintRect ctx col r
-drawVHint ctx col (Polar w) = pure unit
+drawVHint ctx col (Polar w) = drawHintWedge ctx col w
 
 
 --------------------------------------------------------------------------------
@@ -89,7 +101,7 @@ splitBoxV (Rectangle r) i =
 splitWedgeHEven :: Wedge -> Int -> List Space
 splitWedgeHEven _ 0 = Nil
 splitWedgeHEven (Wedge w) i =
-  let newA = ((w.endAngle - w.startAngle) / 2.0) + w.startAngle
+  let newA = ((w.endAngle - w.startAngle) / toNumber i) + w.startAngle
   in Polar (Wedge (w { endAngle = newA })) :
        splitWedgeHEven (Wedge (w { startAngle = newA })) (i - 1)
 
@@ -125,7 +137,7 @@ toWedge :: Rectangle -> Wedge
 toWedge (Rectangle r) = Wedge { x: (r.x + r.w) / 2.0
                               , y: (r.y + r.h) / 2.0
                               , inRad: 0.0
-                              , outRad: min r.h r.w
+                              , outRad: (min r.h r.w) / 2.0
                               , startAngle: 0.0
                               , endAngle: 2.0 * pi
                               }

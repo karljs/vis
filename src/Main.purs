@@ -12,6 +12,7 @@ module Main
 
 import Canvas (cComponent)
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Loops (whileJust)
 import DOM.HTML.Types (htmlElementToNode)
 import DOM.Node.Node (firstChild, removeChild)
@@ -24,7 +25,7 @@ import V (V(..))
 import Vis (reorient, rotate)
 import Vis.Types (Frame(..), VVis(..), above, fillsH, fillsV, nextTo)
 
-main :: Eff (HA.HalogenEffects (canvas :: CANVAS)) Unit
+main :: Eff (HA.HalogenEffects (canvas :: CANVAS, console :: CONSOLE)) Unit
 main = HA.runHalogenAff do
   body <- HA.awaitBody
   runUI cComponent defaultVis body
@@ -36,7 +37,7 @@ defaultVis = v1
 
 -- | Kind of like `main`, except it does the extra step of deleting all child
 -- | HTML nodes from the body.  This is useful when running from a REPL.
-go :: VVis Number -> Eff (HA.HalogenEffects (canvas :: CANVAS)) Unit
+go :: VVis Number -> Eff (HA.HalogenEffects (canvas :: CANVAS, console :: CONSOLE)) Unit
 go vis = HA.runHalogenAff do
   body <- HA.awaitBody
   let nb = htmlElementToNode body
@@ -57,7 +58,7 @@ vs2 = [ One 2.3, One 6.8, One (-1.0), Chc "Dim3" (One 1.0) (One 4.0),
         Chc "Dim4" (Chc "Dim5" (One 5.0) (One (-2.0))) (One 3.2) ]
 
 v1 :: VVis Number
-v1 = NextTo $ fillsV vs1
+v1 = MkPolar $ NextTo $ fillsV vs1
 
 v2 :: VVis Number
 v2 = Above $ fillsH vs2

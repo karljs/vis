@@ -9,6 +9,7 @@ module Canvas.Types
   , Wedge(..)
   ) where
 
+import Control.Monad.Eff.Console (CONSOLE)
 import DOM (DOM)
 import Data.Show (class Show, show)
 import Graphics.Canvas (CANVAS)
@@ -21,6 +22,10 @@ import Vis.Types (VVis)
 data Space
   = Cartesian Rectangle
   | Polar Wedge
+
+instance showSpace :: Show Space where
+  show (Cartesian r) = "Cartesian: " <> show r
+  show (Polar w) = "Polar: " <> show w
 
 -- | A rectangle is represented as a top left corner plus a width and height.
 -- |
@@ -65,7 +70,7 @@ instance showWedge :: Show Wedge where
 
 -- | An extensible record that includes the CANVAS effect, which we use to
 -- | draw things to an HTML canvas.
-type CEffects eff = (canvas :: CANVAS, dom :: DOM | eff)
+type CEffects eff = (canvas :: CANVAS, dom :: DOM, console :: CONSOLE | eff)
 
 -- | The state for the canvas component, which is currently just a variational
 -- | visualization.  The view decision comes from querying the child UI.
