@@ -17,11 +17,14 @@ import Vis.Types (Orientation(..), VVis(..))
 
 -- | Change the orientation between vertical and horizontal, or angle and radius
 reorient :: forall a. VVis a -> VVis a
-reorient (Fill f) =
-  Fill (f { orientation = swapOrientation f.orientation })
+reorient (Fill f) = Fill (f { orientation = swapOrientation f.orientation })
 reorient (V d l r) = V d (reorient l) (reorient r)
-reorient (NextTo v) = NextTo (v { vs = map reorient v.vs })
-reorient (Above v) = Above (v { vs = map reorient v.vs })
+reorient (NextTo v) = NextTo { orientation: swapOrientation v.orientation
+                             , vs: map reorient v.vs
+                             }
+reorient (Above v) = Above { orientation: swapOrientation v.orientation
+                           , vs: map reorient v.vs
+                           }
 reorient (MkCartesian v) = MkCartesian (reorient v)
 reorient (MkPolar v) = MkPolar (reorient v)
 

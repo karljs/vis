@@ -23,7 +23,12 @@ drawWedgeH :: forall m.
   Maybe Label ->
   Eff (CEffects m) Unit
 drawWedgeH ctx v' (Wedge w) (Frame f) ml = do
-  pure unit
+  setFillStyle ctx "#657b83"
+  setStrokeStyle ctx "#ffffff"
+  setLineDash ctx []
+  setLineWidth ctx 1.0
+  fillWedge ctx (Wedge w)
+  strokeWedge ctx (Wedge w)
 
 drawWedgeV :: forall m.
   Context2D ->

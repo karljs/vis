@@ -21,7 +21,7 @@ import Canvas.Drawing.Rectangular (drawBarH, drawBarV, drawHintRect)
 import Canvas.Types (CEffects, Rectangle(..), Space(..), Wedge(..))
 import Color (Color, black)
 import Control.Monad.Eff (Eff)
-import Data.Foldable (sequence_)
+import Data.Foldable (sequence_, sum)
 import Data.Int (toNumber)
 import Data.List (List(..), zipWith, (:))
 import Data.List.NonEmpty (length, toList)
@@ -29,7 +29,7 @@ import Data.Map (lookup)
 import Data.Maybe (Maybe(..))
 import Graphics.Canvas (Context2D)
 import Math (pi)
-import Prelude (Unit, bind, map, min, otherwise, pure, unit, ($), (&&), (*), (+), (-), (/), (==))
+import Prelude (Unit, bind, map, min, ($), (*), (+), (-), (/))
 import UI (DecisionColors)
 import V (Decision, Dir(..), lookupDim)
 import Vis.Types (Orientation(..), VVis(..))
@@ -88,11 +88,12 @@ parseVis ctx dec cs (MkPolar v)     s = parseVis ctx dec cs v (toPolar s)
 parseVis ctx dec cs (Fill f) (Cartesian r) =
   case f.orientation of
     OrientVertical -> drawBarV ctx f.val r f.frame f.label
-    OrientHorizontal -> drawBarH ctx f.val r f.frame f.label
+    OrientHorizontal -> drawBarV ctx f.val r f.frame f.label
 parseVis ctx dec cs (Fill f) (Polar w) =
   case f.orientation of
     OrientVertical -> drawWedgeV ctx f.val w f.frame f.label
     OrientHorizontal -> drawWedgeH ctx f.val w f.frame f.label
+
 
 -- | Draw some visual indicator that part of a chart contains variability.
 drawVHint :: forall m. Context2D -> Color -> Space -> Eff (CEffects m) Unit
@@ -140,7 +141,13 @@ splitWedgeHEven (Wedge w) i =
 
 -- | Divide a wedge into unequal sub-spaces by angle such as for a pie chart.
 splitWedgeHOdd :: Wedge -> List Number -> List Space
-splitWedgeHOdd w ls = Nil
+splitWedgeHOdd w ls = split w ls (sum ls)
+  where split :: Wedge -> List Number -> Number -> List Space
+        split _ Nil _ = Nil
+        split (Wedge w) (v : vs) t =
+          let newAngle = (v / t) * (w.endAngle - w.startAngle) + w.startAngle
+          in Polar (Wedge (w { endAngle = newAngle })) :
+               split (Wedge (w { startAngle = newAngle })) vs (t - v)
 
 -- | Divide a wedge into equal sub-spaces by radius
 splitWedgeVEven :: Wedge -> Int -> List Space
