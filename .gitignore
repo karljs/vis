@@ -1,10 +1,11 @@
-/bower_components/
-/node_modules/
-/.pulp-cache/
-/output/
-/generated-docs/
-/.psc-package/
-/.psc*
-/.purs*
-/.psa*
+# Dependencies
+.psci_modules
+.pulp-cache
+bower_components
+node_modules
+
+# Generated files
+.psci
+.purs-repl
+output
 *.js
