@@ -34,6 +34,8 @@ data VVis a
   | V Dim (VVis a) (VVis a)
   | NextTo (NonEmptyList (VVis a))
   | Above (NonEmptyList (VVis a))
+  | MkCartesian (VVis a)
+  | MkPolar (VVis a)
 
 instance showVVis :: Show a => Show (VVis a) where
   show (Fill f) = "Fill " <> show f.fillVal
@@ -45,6 +47,8 @@ instance showVVis :: Show a => Show (VVis a) where
     "NextTo\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
   show (Above vs) =
     "Above\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
+  show (MkCartesian v) = "Cartesian " <> show v
+  show (MkPolar v) = "Polar " <> show v
 
 -- | A frame represents the context into which we map the values being charted.
 -- | Currently this just tracks the minimum and maximum values in a chart.

@@ -1,39 +1,31 @@
 module Canvas.Types
-  ( class Renderable
-  , CEffects
+  ( CEffects
   , CInput
   , CQuery(..)
   , CState
-  , Drawing(..)
-  , Primitive(..)
   , Rectangle(..)
   , Space(..)
   , UISlot(..)
-  , render
+  , Wedge(..)
   ) where
 
 import DOM (DOM)
-import Data.List (List)
 import Data.Show (class Show, show)
 import Graphics.Canvas (CANVAS)
 import Prelude (class Eq, class Ord, (<>))
 import UI.Types (UIMessage)
 import Vis.Types (VVis)
 
-class Renderable r where
-  render :: forall a. r a -> Drawing
-
-data Drawing = Drawing (List Primitive)
-
-data Primitive
-  = Box Rectangle
-
 -- | A type corresponding to a part of a canvas that we can render to, which
 -- | is used to partition the space as we match complicated visualizations.
 data Space
   = Cartesian Rectangle
+  | Polar Wedge
 
 -- | A rectangle is represented as a top left corner plus a width and height.
+-- |
+-- | - The upper left corner coordinates `x` and `y`
+-- | - The width and height `w` and `h`
 data Rectangle = Rectangle
   { x :: Number
   , y :: Number
@@ -45,9 +37,31 @@ instance showRectangle :: Show Rectangle where
   show (Rectangle r) = "Rectangle (" <> show r.x <> ", " <> show r.y <> ") "
                                      <> show r.w <> " " <> show r.h
 
+-- | A wedge represents a chunk of polar space.  It could be anything from a
+-- | circle to a piece of a doughnut.
+-- |
+-- | - The coordinates of the center of the corresponding circle `x` and `y`
+-- | - The inner and outer radius of the wedge `inRad` and `outRad`
+-- | - The starting and ending angle `startAngle` and `endAngle`
+data Wedge = Wedge
+  { x :: Number
+  , y :: Number
+  , inRad :: Number
+  , outRad :: Number
+  , startAngle :: Number
+  , endAngle :: Number
+  }
+
+instance showWedge :: Show Wedge where
+  show (Wedge w) = "Wedge (" <> show w.x <> ", " <> show w.y <> ")"
+                             <> " in: " <> show w.inRad
+                             <> " out: " <> show w.outRad
+                             <> " a1: " <> show w.startAngle
+                             <> " a2: " <> show w.endAngle
+
 
 --------------------------------------------------------------------------------
--- Types used for the canvas component
+-- Types used for the Halogen canvas component
 
 -- | An extensible record that includes the CANVAS effect, which we use to
 -- | draw things to an HTML canvas.
