@@ -7,11 +7,11 @@ module Canvas.Drawing.Polar
 import Canvas.Types (Wedge(..), CEffects)
 import Color (Color, toHexString)
 import Control.Monad.Eff (Eff)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple (Tuple(..))
 import Graphics.Canvas (Context2D, TextAlign(..), arc, beginPath, closePath, fill, fillText, lineTo, moveTo, setFillStyle, setFont, setLineDash, setLineWidth, setStrokeStyle, setTextAlign, stroke, strokePath, strokeText)
 import Math (cos, sin)
-import Prelude (Unit, discard, pure, unit, (*), (+), (<>), (>=))
+import Prelude (Unit, discard, pure, show, unit, (*), (+), (/), (<>), (>=))
 import Util (convertRange)
 import Vis.Types (Frame(..), Label(..))
 
@@ -22,13 +22,16 @@ drawWedgeH :: forall m.
   Frame Number ->
   Maybe Label ->
   Eff (CEffects m) Unit
-drawWedgeH ctx v' (Wedge w) (Frame f) ml = do
+drawWedgeH ctx v (Wedge w) (Frame f) ml = do
   setFillStyle ctx "#657b83"
   setStrokeStyle ctx "#ffffff"
   setLineDash ctx []
   setLineWidth ctx 1.0
   fillWedge ctx (Wedge w)
   strokeWedge ctx (Wedge w)
+  if v >= 0.0
+    then maybe (pure unit) (\l -> drawLabelHP ctx l (Wedge w)) ml
+    else maybe (pure unit) (\l -> drawLabelHN ctx l (Wedge w)) ml
 
 drawWedgeV :: forall m.
   Context2D ->
@@ -159,30 +162,26 @@ drawLabelVN ctx (Label l) (Wedge w) = do
 drawLabelHP :: forall m.
   Context2D -> Label -> Wedge -> Eff (CEffects m) Unit
 drawLabelHP ctx (Label l) (Wedge w) = do
-  -- setTextAlign ctx AlignRight
-  -- let tx = r.x + r.w - (l.labelSize / 1.8)
-  --     ty = r.y + ((r.h + l.labelSize) / 2.0)
-  -- drawLabelCommon ctx tx ty (Label l)
+  setTextAlign ctx AlignCenter
+  let ha = (w.startAngle + w.endAngle) / 2.0
+      hr = (w.inRad + w.outRad) / 2.0
+      tx = cos ha * hr + w.x
+      ty = sin ha * hr + w.y
+  drawLabelCommon ctx tx ty (Label l)
   pure unit
 
 -- | Draw the label for a horizontally oriented, negative valued bar.
 drawLabelHN :: forall m.
   Context2D -> Label -> Wedge -> Eff (CEffects m) Unit
-drawLabelHN ctx (Label l) (Wedge w) = do
-  -- setTextAlign ctx AlignLeft
-  -- let tx = r.x + (l.labelSize / 1.8)
-  --     ty = r.y + ((r.h + l.labelSize) / 2.0)
-  -- drawLabelCommon ctx tx ty (Label l)
-  pure unit
+drawLabelHN ctx l w = drawLabelHP ctx l w
 
 -- | Handle all of the label drawing parts that are common regardless of
 -- | orientation, etc.
 drawLabelCommon :: forall m.
   Context2D -> Number -> Number -> Label -> Eff (CEffects m) Unit
 drawLabelCommon ctx tx ty (Label l) = do
-  pure unit
-  -- setFont ctx ("bold " <> show l.labelSize <> "px sans-serif" )
-  -- setFillStyle ctx "#ffffff"
-  -- setStrokeStyle ctx "#000000"
-  -- fillText ctx l.labelText tx ty
-  -- strokeText ctx l.labelText tx ty
+  setFont ctx ("bold " <> show l.size <> "px sans-serif" )
+  setFillStyle ctx "#ffffff"
+  setStrokeStyle ctx "#000000"
+  fillText ctx l.text tx ty
+  strokeText ctx l.text tx ty
