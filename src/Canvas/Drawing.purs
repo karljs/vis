@@ -27,6 +27,7 @@ import Data.List (List(..), zipWith, (:))
 import Data.List.NonEmpty (length, toList)
 import Data.Map (lookup)
 import Data.Maybe (Maybe(..))
+import Data.Ord (abs)
 import Graphics.Canvas (Context2D)
 import Math (pi)
 import Prelude (Unit, bind, map, min, ($), (*), (+), (-), (/))
@@ -48,27 +49,27 @@ parseVis ctx dec cs (NextTo v) (Cartesian r) = do
              OrientVertical ->
                splitBoxHEven r (length v.vs)
              OrientHorizontal ->
-               splitBoxHOdd r (toList $ map relativeSize v.vs)
+               splitBoxHOdd r (toList $ map (relativeSize dec) v.vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) bs
 parseVis ctx dec cs (NextTo v) (Polar w) = do
   let ws = case v.orientation of
              OrientVertical ->
                splitWedgeHEven w (length v.vs)
              OrientHorizontal ->
-               splitWedgeHOdd w (toList $ map relativeSize v.vs)
+               splitWedgeHOdd w (toList $ map (relativeSize dec) v.vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) ws
 
 parseVis ctx dec cs (Above v) (Cartesian r) = do
   let bs = case v.orientation of
              OrientVertical ->
-               splitBoxVOdd r (toList $ map relativeSize v.vs)
+               splitBoxVOdd r (toList $ map (relativeSize dec) v.vs)
              OrientHorizontal ->
                splitBoxVEven r (length v.vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) bs
 parseVis ctx dec cs (Above v) (Polar w) = do
   let ws = case v.orientation of
              OrientVertical ->
-               splitWedgeHOdd w (toList $ map relativeSize v.vs)
+               splitWedgeHOdd w (toList $ map (relativeSize dec) v.vs)
              OrientHorizontal ->
                splitWedgeHEven w (length v.vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) ws
@@ -100,9 +101,14 @@ drawVHint :: forall m. Context2D -> Color -> Space -> Eff (CEffects m) Unit
 drawVHint ctx col (Cartesian r) = drawHintRect ctx col r
 drawVHint ctx col (Polar w) = drawHintWedge ctx col w
 
-relativeSize :: VVis Number -> Number
-relativeSize (Fill f) = f.val
-relativeSize _ = 1.0
+relativeSize :: Decision -> VVis Number -> Number
+relativeSize _ (Fill f) = abs f.val
+relativeSize dec (V d l r) =
+  case lookupDim d dec of
+    Just L -> relativeSize dec l
+    Just R -> relativeSize dec r
+    _      -> 1.0
+relativeSize _ _ = 1.0
 
 --------------------------------------------------------------------------------
 -- Functions related to splitting spaces
