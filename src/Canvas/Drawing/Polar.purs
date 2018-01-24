@@ -56,18 +56,14 @@ drawWedgeV ctx v' (Wedge w) (Frame f) ml = do
                              }
             fillWedge ctx wedg
             strokeWedge ctx wedg
-            case ml of
-              Just l -> pure unit
-              Nothing -> pure unit
+            maybe (pure unit) (\l -> drawLabelVP ctx l wedg) ml
     else do let wedg = Wedge { x: w.x, y: w.y
                              , inRad: v , outRad: z
                              , startAngle: w.startAngle , endAngle: w.endAngle
                              }
             fillWedge ctx wedg
             strokeWedge ctx wedg
-            case ml of
-              Just l -> pure unit
-              Nothing -> pure unit
+            maybe (pure unit) (\l -> drawLabelVP ctx l wedg) ml
 
 drawHintWedge :: forall m. Context2D -> Color -> Wedge -> Eff (CEffects m) Unit
 drawHintWedge ctx col w = do
@@ -83,23 +79,18 @@ drawHintWedge ctx col w = do
 -- | doughnut.
 strokeWedge :: forall m. Context2D -> Wedge -> Eff (CEffects m) Unit
 strokeWedge ctx (Wedge w) = do
-  let p1x = (cos w.startAngle) * w.inRad + w.x
-      p1y = (sin w.startAngle) * w.inRad + w.y
-      p2x = (cos w.startAngle) * w.outRad + w.x
-      p2y = (sin w.startAngle) * w.outRad + w.y
-      p3x = (cos w.endAngle) * w.outRad + w.x
-      p3y = (sin w.endAngle) * w.outRad + w.y
-      p4x = (cos w.endAngle) * w.inRad + w.x
-      p4y = (sin w.endAngle) * w.inRad + w.y
   beginPath ctx
-  moveTo ctx p1x p1y
-  lineTo ctx p2x p2y
+  moveTo ctx ((cos w.startAngle) * w.inRad + w.x)
+             ((sin w.startAngle) * w.inRad + w.y)
+  lineTo ctx ((cos w.startAngle) * w.outRad + w.x)
+             ((sin w.startAngle) * w.outRad + w.y)
   arc ctx { x: w.x, y: w.y
           , r: w.outRad
           , start: w.startAngle, end: w.endAngle
           , anti: false
           }
-  lineTo ctx p4x p4y
+  lineTo ctx ((cos w.endAngle) * w.inRad + w.x)
+             ((sin w.endAngle) * w.inRad + w.y)
   arc ctx { x: w.x, y: w.y
           , r: w.inRad
           , start: w.endAngle, end: w.startAngle
@@ -110,23 +101,18 @@ strokeWedge ctx (Wedge w) = do
 -- | Fill a wedge shape, which is something like a piece of a doughnut.
 fillWedge :: forall m. Context2D -> Wedge -> Eff (CEffects m) Unit
 fillWedge ctx (Wedge w) = do
-  let p1x = (cos w.startAngle) * w.inRad + w.x
-      p1y = (sin w.startAngle) * w.inRad + w.y
-      p2x = (cos w.startAngle) * w.outRad + w.x
-      p2y = (sin w.startAngle) * w.outRad + w.y
-      p3x = (cos w.endAngle) * w.outRad + w.x
-      p3y = (sin w.endAngle) * w.outRad + w.y
-      p4x = (cos w.endAngle) * w.inRad + w.x
-      p4y = (sin w.endAngle) * w.inRad + w.y
   beginPath ctx
-  moveTo ctx p1x p1y
-  lineTo ctx p2x p2y
+  moveTo ctx ((cos w.startAngle) * w.inRad + w.x)
+             ((sin w.startAngle) * w.inRad + w.y)
+  lineTo ctx ((cos w.startAngle) * w.outRad + w.x)
+             ((sin w.startAngle) * w.outRad + w.y)
   arc ctx { x: w.x, y: w.y
           , r: w.outRad
           , start: w.startAngle, end: w.endAngle
           , anti: false
           }
-  lineTo ctx p4x p4y
+  lineTo ctx ((cos w.endAngle) * w.inRad + w.x)
+             ((sin w.endAngle) * w.inRad + w.y)
   arc ctx { x: w.x, y: w.y
           , r: w.inRad
           , start: w.endAngle, end: w.startAngle
@@ -141,39 +127,33 @@ fillWedge ctx (Wedge w) = do
   -- | Draw the label for a vertically oriented, positive valued wedge.
 drawLabelVP :: forall m.
   Context2D -> Label -> Wedge -> Eff (CEffects m) Unit
-drawLabelVP ctx (Label l) (Wedge w) = do
-  setTextAlign ctx AlignCenter
-  -- let tx = r.x + (r.w / 2.0)
-  --     ty = r.y + l.labelSize
-  -- drawLabelCommon ctx tx ty (Label l)
-  pure unit
+drawLabelVP = drawLabelWedge
 
 -- | Draw the label for a vertically oriented, negative valued bar.
 drawLabelVN :: forall m.
   Context2D -> Label -> Wedge -> Eff (CEffects m) Unit
-drawLabelVN ctx (Label l) (Wedge w) = do
-  setTextAlign ctx AlignCenter
-  -- let tx = r.x + (r.w / 2.0)
-  --     ty = r.y + r.h - (l.labelSize / 1.8)
-  -- drawLabelCommon ctx tx ty (Label l)
-  pure unit
+drawLabelVN = drawLabelWedge
 
 -- | Draw the label for a horizontally oriented, positive valued bar.
 drawLabelHP :: forall m.
   Context2D -> Label -> Wedge -> Eff (CEffects m) Unit
-drawLabelHP ctx (Label l) (Wedge w) = do
-  setTextAlign ctx AlignCenter
-  let ha = (w.startAngle + w.endAngle) / 2.0
-      hr = (w.inRad + w.outRad) / 2.0
-      tx = cos ha * hr + w.x
-      ty = sin ha * hr + w.y
-  drawLabelCommon ctx tx ty (Label l)
-  pure unit
+drawLabelHP = drawLabelWedge
 
 -- | Draw the label for a horizontally oriented, negative valued bar.
 drawLabelHN :: forall m.
   Context2D -> Label -> Wedge -> Eff (CEffects m) Unit
-drawLabelHN ctx l w = drawLabelHP ctx l w
+drawLabelHN = drawLabelWedge
+
+-- | For now at least, all of the different wedges have their label position
+-- | calculated the exact same way, so this function just factors it out.
+drawLabelWedge :: forall m.
+  Context2D -> Label -> Wedge -> Eff (CEffects m) Unit
+drawLabelWedge ctx l (Wedge w) = do
+  let ha = (w.startAngle + w.endAngle) / 2.0
+      hr = (w.inRad + w.outRad) / 2.0
+      tx = cos ha * hr + w.x
+      ty = sin ha * hr + w.y
+  drawLabelCommon ctx tx ty l
 
 -- | Handle all of the label drawing parts that are common regardless of
 -- | orientation, etc.

@@ -49,7 +49,7 @@ uiComponent =
           ]
           ( HH.legend_ [ HH.h2_ [ HH.text "Dimensions" ] ] :
             map (dimBox state) (toUnfoldable (decDims state.viewDec)) )
-        , HH.text (showDec state.viewDec)
+        -- , HH.text (showDec state.viewDec)
         ]
 
   eval :: UIQuery ~> H.ComponentDSL (UIState a) UIQuery UIMessage m
