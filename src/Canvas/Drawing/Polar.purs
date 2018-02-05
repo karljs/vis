@@ -7,9 +7,9 @@ module Canvas.Drawing.Polar
 import Canvas.Types (Wedge(..), CEffects)
 import Color (Color, toHexString)
 import Control.Monad.Eff (Eff)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe, maybe)
 import Data.Tuple (Tuple(..))
-import Graphics.Canvas (Context2D, TextAlign(..), arc, beginPath, closePath, fill, fillText, lineTo, moveTo, setFillStyle, setFont, setLineDash, setLineWidth, setStrokeStyle, setTextAlign, stroke, strokePath, strokeText)
+import Graphics.Canvas (Context2D, TextAlign(..), arc, beginPath, closePath, fill, fillText, lineTo, moveTo, setFillStyle, setFont, setLineDash, setLineWidth, setStrokeStyle, setTextAlign, stroke, strokeText)
 import Math (cos, sin)
 import Prelude (Unit, discard, pure, show, unit, (*), (+), (/), (<>), (>=))
 import Util (convertRange)
@@ -21,9 +21,10 @@ drawWedgeH :: forall m.
   Wedge ->
   Frame Number ->
   Maybe Label ->
+  Color ->
   Eff (CEffects m) Unit
-drawWedgeH ctx v (Wedge w) (Frame f) ml = do
-  setFillStyle ctx "#657b83"
+drawWedgeH ctx v (Wedge w) (Frame f) ml col = do
+  setFillStyle ctx (toHexString col)
   setStrokeStyle ctx "#ffffff"
   setLineDash ctx []
   setLineWidth ctx 1.0
@@ -39,13 +40,14 @@ drawWedgeV :: forall m.
   Wedge ->
   Frame Number ->
   Maybe Label ->
+  Color ->
   Eff (CEffects m) Unit
-drawWedgeV ctx v' (Wedge w) (Frame f) ml = do
+drawWedgeV ctx v' (Wedge w) (Frame f) ml col = do
   let v = convertRange v'  (Tuple f.frameMin f.frameMax)
                            (Tuple w.inRad w.outRad)
       z = convertRange 0.0 (Tuple f.frameMin f.frameMax)
                            (Tuple w.inRad w.outRad)
-  setFillStyle ctx "#657b83"
+  setFillStyle ctx (toHexString col)
   setStrokeStyle ctx "#ffffff"
   setLineDash ctx []
   setLineWidth ctx 1.0
@@ -153,6 +155,7 @@ drawLabelWedge ctx l (Wedge w) = do
       hr = (w.inRad + w.outRad) / 2.0
       tx = cos ha * hr + w.x
       ty = sin ha * hr + w.y
+  setTextAlign ctx AlignCenter
   drawLabelCommon ctx tx ty l
 
 -- | Handle all of the label drawing parts that are common regardless of

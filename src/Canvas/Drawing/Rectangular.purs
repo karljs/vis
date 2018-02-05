@@ -21,11 +21,12 @@ drawBarV :: forall m.
   Rectangle ->
   Frame Number ->
   Maybe Label ->
+  Color ->
   Eff (CEffects m) Unit
-drawBarV ctx v' (Rectangle r) (Frame f) ml = do
+drawBarV ctx v' (Rectangle r) (Frame f) ml col = do
   let v = convertRange v' (Tuple f.frameMin f.frameMax) (Tuple (r.y + r.h) r.y)
       z = convertRange 0.0 (Tuple f.frameMin f.frameMax) (Tuple (r.y + r.h) r.y)
-  setFillStyle ctx "#657b83"
+  setFillStyle ctx (toHexString col)
   setStrokeStyle ctx "#ffffff"
   setLineDash ctx []
   setLineWidth ctx 1.0
@@ -50,11 +51,12 @@ drawBarH :: forall m.
   Rectangle ->
   Frame Number ->
   Maybe Label ->
+  Color ->
   Eff (CEffects m) Unit
-drawBarH ctx v' (Rectangle r) (Frame f) ml = do
+drawBarH ctx v' (Rectangle r) (Frame f) ml col = do
   let v = convertRange v' (Tuple f.frameMin f.frameMax) (Tuple r.x (r.x + r.w))
       z = convertRange 0.0 (Tuple f.frameMin f.frameMax) (Tuple r.x (r.x + r.w))
-  setFillStyle ctx "#657b83"
+  setFillStyle ctx (toHexString col)
   setLineDash ctx []
   setStrokeStyle ctx "#ffffff"
   setLineWidth ctx 1.0

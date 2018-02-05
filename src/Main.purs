@@ -1,7 +1,10 @@
 module Main
-  ( module V
+  ( module Color.Scheme.Clrs
+  , module Prelude
+  , module V
   , module Vis
   , module Vis.Types
+  , module VisColor
   , go
   , main
   , v1
@@ -11,6 +14,7 @@ module Main
   ) where
 
 import Canvas (cComponent)
+import Color.Scheme.Clrs
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Loops (whileJust)
@@ -22,8 +26,9 @@ import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 import Prelude (Unit, bind, negate, ($))
 import V (V(..))
-import Vis (Orientation(..), reorient, rotate)
+import Vis (Orientation(..), color, color1, reorient, rotate)
 import Vis.Types (Frame(..), VVis(..), above, fillsH, fillsV, nextTo)
+import VisColor (defaultColors)
 
 main :: Eff (HA.HalogenEffects (canvas :: CANVAS, console :: CONSOLE)) Unit
 main = HA.runHalogenAff do

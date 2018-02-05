@@ -13,6 +13,7 @@ module Vis.Types
   , nextTo
   ) where
 
+import Color (Color, black)
 import Data.Array (toUnfoldable)
 import Data.List (List)
 import Data.List.NonEmpty (NonEmptyList, foldr, fromList)
@@ -20,7 +21,7 @@ import Data.Maybe (Maybe(..), fromJust)
 import Data.Show (class Show, show)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
-import Prelude (class Eq, flip, map, ($), (<<<), (<>))
+import Prelude (class Eq, flip, map, ($), (<>))
 import Util (vmaximum, vminimum)
 import V (Dim, V(..))
 
@@ -30,6 +31,7 @@ data VVis a
          , frame :: Frame a
          , orientation :: Orientation
          , label :: Maybe Label
+         , color :: Color
          }
   | V Dim (VVis a) (VVis a)
   | NextTo { orientation :: Orientation
@@ -122,6 +124,7 @@ vFill f o (One v) =
        , frame: f
        , orientation: o
        , label: Just (defaultLabel v)
+       , color: black
        }
 vFill f o (Chc d l r) = V d (vFill f o l) (vFill f o r)
 

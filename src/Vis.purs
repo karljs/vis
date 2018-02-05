@@ -1,5 +1,7 @@
 module Vis
   ( module Vis.Types
+  , color
+  , color1
   , flop
   , reorient
   , rotate
@@ -9,8 +11,9 @@ module Vis
   , visInitDec
   ) where
 
+import Color (Color)
 import Data.List (List(..), concatMap, (:))
-import Data.List.NonEmpty (toList)
+import Data.List.NonEmpty (NonEmptyList, head, toList, zipWith)
 import Data.Maybe (Maybe(..), maybe)
 import Prelude (flip, map, (<<<), (<>))
 import V (Decision, Dim, Dir(..), leftDec, lookupDim)
@@ -49,6 +52,24 @@ swapOrientation :: Orientation -> Orientation
 swapOrientation OrientVertical = OrientHorizontal
 swapOrientation OrientHorizontal = OrientVertical
 
+--------------------------------------------------------------------------------
+-- Aesthetics and style functions
+
+color :: forall a. VVis a -> NonEmptyList Color -> VVis a
+color (Fill f) cs = Fill (f { color = head cs })
+color (V d l r) cs = V d (color l cs) (color r cs)
+color (NextTo v) cs = NextTo (v { vs = zipWith color1 v.vs cs })
+color (Above v) cs = Above (v { vs = zipWith color1 v.vs cs })
+color (MkCartesian v) cs = MkCartesian (color v cs)
+color (MkPolar v) cs = MkPolar (color v cs)
+
+color1 :: forall a. VVis a -> Color -> VVis a
+color1 (Fill f) c = Fill (f { color = c })
+color1 (V d l r) c = V d (color1 l c) (color1 r c)
+color1 (NextTo v) c = NextTo (v { vs = map (flip color1 c) v.vs })
+color1 (Above v) c = Above (v { vs = map (flip color1 c) v.vs })
+color1 (MkCartesian v) c = MkCartesian (color1 v c)
+color1 (MkPolar v) c = MkPolar (color1 v c)
 
 --------------------------------------------------------------------------------
 -- Things related to variability

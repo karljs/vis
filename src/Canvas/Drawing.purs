@@ -30,7 +30,7 @@ import Data.Maybe (Maybe(..))
 import Data.Ord (abs)
 import Graphics.Canvas (Context2D)
 import Math (pi)
-import Prelude (Unit, bind, map, min, ($), (*), (+), (-), (/))
+import Prelude (Unit, discard, map, min, ($), (*), (+), (-), (/))
 import UI (DecisionColors)
 import V (Decision, Dir(..), lookupDim)
 import Vis.Types (Orientation(..), VVis(..))
@@ -69,31 +69,31 @@ parseVis ctx dec cs (Above v) (Cartesian r) = do
 parseVis ctx dec cs (Above v) (Polar w) = do
   let ws = case v.orientation of
              OrientVertical ->
-               splitWedgeHOdd w (toList $ map (relativeSize dec) v.vs)
+               splitWedgeVOdd w (toList $ map (relativeSize dec) v.vs)
              OrientHorizontal ->
-               splitWedgeHEven w (length v.vs)
+               splitWedgeVEven w (length v.vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) ws
 
 parseVis ctx dec cs (V d l r) sp = do
-  _ <- case lookup d cs of
-         Just col -> drawVHint ctx col sp
-         _ -> drawVHint ctx black sp
   case lookupDim d dec of
     Just L -> parseVis ctx dec cs l sp
     Just R -> parseVis ctx dec cs r sp
     _      -> parseVis ctx dec cs l sp
+  case lookup d cs of
+    Just col -> drawVHint ctx col sp
+    _        -> drawVHint ctx black sp
 
 parseVis ctx dec cs (MkCartesian v) s = parseVis ctx dec cs v (toCartesian s)
 parseVis ctx dec cs (MkPolar v)     s = parseVis ctx dec cs v (toPolar s)
 
 parseVis ctx dec cs (Fill f) (Cartesian r) =
   case f.orientation of
-    OrientVertical -> drawBarV ctx f.val r f.frame f.label
-    OrientHorizontal -> drawBarH ctx f.val r f.frame f.label
+    OrientVertical -> drawBarV ctx f.val r f.frame f.label f.color
+    OrientHorizontal -> drawBarH ctx f.val r f.frame f.label f.color
 parseVis ctx dec cs (Fill f) (Polar w) =
   case f.orientation of
-    OrientVertical -> drawWedgeV ctx f.val w f.frame f.label
-    OrientHorizontal -> drawWedgeH ctx f.val w f.frame f.label
+    OrientVertical -> drawWedgeV ctx f.val w f.frame f.label f.color
+    OrientHorizontal -> drawWedgeH ctx f.val w f.frame f.label f.color
 
 
 -- | Draw some visual indicator that part of a chart contains variability.
