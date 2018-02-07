@@ -4,7 +4,7 @@ module Canvas
 
 import CSS (StyleM, backgroundColor, body, float, floatLeft, fontFamily, height, margin, nil, padding, pct, px, sansSerif, select, white, width)
 import CSS.Overflow (hidden, overflow)
-import Canvas.Drawing (parseVis)
+import Canvas.Drawing (parseVisV)
 import Canvas.Types (CEffects, CInput, CQuery(..), CState, Rectangle(..), Space(..), UISlot(..))
 import Control.Monad.Aff (Aff)
 import Control.Monad.Eff (Eff)
@@ -97,12 +97,12 @@ renderVis can dec cs vis = do
   h <- C.getCanvasHeight can
   ctx <- C.getContext2D can
   _ <- clearRect ctx { x: 0.0, y: 0.0, w: w / 2.0, h: h / 2.0}
-  _ <- parseVis ctx dec cs vis
-         (Cartesian (Rectangle { x: 4.0
-                               , y: 4.0
-                               , w: w / 2.0 - 8.0
-                               , h: h / 2.0 - 8.0
-                               }))
+  _ <- parseVisV ctx dec cs vis
+         (Rectangle { x: 4.0
+                    , y: 4.0
+                    , w: w / 2.0 - 8.0
+                    , h: h / 2.0 - 8.0
+                    })
   pure ctx
 
 -- | The same as renderVis, but do some setup things that should only occur
@@ -123,11 +123,11 @@ renderVisInit can dec col vis = do
   _ <- C.setCanvasWidth can (w' * 2.0)
   ctx <- C.getContext2D can
   _ <- scale ctx { scaleX: 2.0, scaleY: 2.0 }
-  _ <- parseVis ctx dec col vis
-         (Cartesian (Rectangle { x: 4.0
-                               , y: 4.0
-                               , w: w' - 8.0
-                               , h: h' - 8.0}))
+  _ <- parseVisV ctx dec col vis
+         (Rectangle { x: 4.0
+                    , y: 4.0
+                    , w: w' - 8.0
+                    , h: h' - 8.0})
   pure ctx
 
 --------------------------------------------------------------------------------

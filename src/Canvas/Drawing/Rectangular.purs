@@ -2,10 +2,11 @@ module Canvas.Drawing.Rectangular
   ( drawBarH
   , drawBarV
   , drawHintRect
+  , drawSMRect
   )where
 
 import Canvas.Types (CEffects, Rectangle(..))
-import Color (Color, toHexString)
+import Color (Color, black, toHexString, white)
 import Control.Monad.Eff (Eff)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
@@ -73,6 +74,16 @@ drawBarH ctx v' (Rectangle r) (Frame f) ml col = do
             case ml of
               Just l -> drawLabelHN ctx l (Rectangle rect)
               Nothing -> pure unit
+
+-- | Draw an outline for the area dedicated to a small multiple, to help set it
+-- | apart.
+drawSMRect :: forall m. Context2D -> Rectangle -> Eff (CEffects m) Unit
+drawSMRect ctx (Rectangle r) = do
+  setFillStyle ctx (toHexString white)
+  setStrokeStyle ctx (toHexString black)
+  setLineDash ctx []
+  setLineWidth ctx 1.0
+  strokeRect ctx r
 
 --------------------------------------------------------------------------------
 -- Functions for drawing labels

@@ -1,6 +1,6 @@
 module UI (module UI.Types, uiComponent) where
 
-import CSS (Direction, StyleM, background, backgroundColor, bold, border, display, ex, float, floatRight, fontWeight, height, inlineBlock, margin, marginBottom, marginLeft, marginRight, marginTop, paddingLeft, pct, px, solid, white, width)
+import CSS (StyleM, background, backgroundColor, bold, border, display, float, floatRight, fontWeight, height, inlineBlock, margin, marginBottom, marginLeft, marginRight, marginTop, pct, px, solid, white, width)
 import Color (Color, black)
 import Data.Array ((:))
 import Data.Foldable (length)
@@ -15,7 +15,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Prelude (type (~>), Unit, bind, const, discard, map, pure, (<>), (==))
 import UI.Types (UIInput, UIMessage(..), UIQuery(..), UIState, DecisionColors, mkDecColors)
-import V (Dim, Dir(..), decDims, lookupDim, showDec, toggleDim)
+import V (Dim, Dir(..))
 import Vis (VVis, visDims, visInitDec)
 import VisColor (makeDimColors)
 
@@ -94,7 +94,7 @@ dimBox st d =
                  Just dir -> radios d dir
                  Nothing  -> [ HH.br_ ])
 
-
+-- Generate the nested radio buttons that appear when a dimension is toggled on
 radios :: forall a. Dim -> Dir -> Array (HH.HTML a (UIQuery Unit))
 radios d dir =
   [ HH.input ([ style inputStyle
@@ -121,10 +121,11 @@ radios d dir =
 --------------------------------------------------------------------------------
 -- Helper functions for implementing the UI component
 
--- | Toggle a particular dimension in the state of the UI component.
+-- | Set a particular dimension direction in the state of the UI component.
 setViewDec :: forall a. Dir -> Dim -> UIState a -> UIState a
 setViewDec dir dim st = st { viewDec = insert dim dir st.viewDec }
 
+-- | Toggle, i.e. add or remove a dimension from the state of the UI.
 toggleViewDec :: forall a. Dim -> UIState a -> UIState a
 toggleViewDec dim st = if member dim st.viewDec
                        then st { viewDec = delete dim st.viewDec }
@@ -152,6 +153,7 @@ fieldsetStyle = do
   border solid (px 1.0) black
   fontWeight bold
 
+-- | The style for the UI labels, which helps map colors to the visualization
 labelStyle :: Color -> StyleM Unit
 labelStyle c = do
   background c
@@ -162,7 +164,7 @@ inputStyle = do
   marginLeft  (px 10.0)
   marginRight (px 5.0)
 
-
+-- | Create a color mapping for the dimensions in a particular visualization
 assignColors :: forall a. VVis a -> DecisionColors
 assignColors vis =
   let ds = visDims vis

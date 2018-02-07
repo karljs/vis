@@ -3,6 +3,7 @@ module Vis
   , color
   , color1
   , flop
+  , removeCoord
   , reorient
   , rotate
   , selectVis
@@ -17,7 +18,7 @@ import Data.List.NonEmpty (NonEmptyList, head, toList, zipWith)
 import Data.Map (empty)
 import Data.Maybe (Maybe(..), maybe)
 import Prelude (flip, map, (<<<), (<>))
-import V (Decision, Dim, Dir(..), leftDec, lookupDim)
+import V (Decision, Dim, Dir(..), lookupDim)
 import Vis.Types (Orientation(..), VVis(..))
 
 --------------------------------------------------------------------------------
@@ -45,13 +46,24 @@ flop (Above v) = NextTo (v { vs = map flop v.vs })
 flop (MkCartesian v) = MkCartesian (flop v)
 flop (MkPolar v) = MkPolar (flop v)
 
--- | Flop and reorient
+-- | Flop, then reorient
 rotate :: forall a. VVis a -> VVis a
 rotate = reorient <<< flop
 
+-- | Swap between vertical and horizontal orientation
 swapOrientation :: Orientation -> Orientation
 swapOrientation OrientVertical = OrientHorizontal
 swapOrientation OrientHorizontal = OrientVertical
+
+-- | Iterate over a visualization and remove all the constructors that change
+-- | the coordinate system.
+removeCoord :: forall a. VVis a -> VVis a
+removeCoord (Fill f) = Fill f
+removeCoord (V d l r) = V d (removeCoord l) (removeCoord r)
+removeCoord (NextTo v) = NextTo (v { vs = map removeCoord v.vs })
+removeCoord (Above v) = Above (v { vs = map removeCoord v.vs })
+removeCoord (MkCartesian v) = removeCoord v
+removeCoord (MkPolar v) = removeCoord v
 
 --------------------------------------------------------------------------------
 -- Aesthetics and style functions

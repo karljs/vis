@@ -1,5 +1,6 @@
 module Canvas.Drawing
   ( parseVis
+  , parseVisV
 
   , splitBoxHEven
   , splitBoxHOdd
@@ -17,26 +18,68 @@ module Canvas.Drawing
   ) where
 
 import Canvas.Drawing.Polar (drawHintWedge, drawWedgeH, drawWedgeV)
-import Canvas.Drawing.Rectangular (drawBarH, drawBarV, drawHintRect)
+import Canvas.Drawing.Rectangular (drawBarH, drawBarV, drawHintRect, drawSMRect)
 import Canvas.Types (CEffects, Rectangle(..), Space(..), Wedge(..))
 import Color (Color, black)
 import Control.Monad.Eff (Eff)
 import Data.Foldable (sequence_, sum)
 import Data.Int (toNumber)
-import Data.List (List(..), zipWith, (:))
+import Data.List (List(..), filter, zipWith, (:))
 import Data.List.NonEmpty (length, toList)
-import Data.Map (lookup)
+import Data.Map (lookup, singleton)
 import Data.Maybe (Maybe(..))
 import Data.Ord (abs)
+import Data.Tuple (Tuple(..))
 import Graphics.Canvas (Context2D)
 import Math (pi)
-import Prelude (Unit, discard, map, min, ($), (*), (+), (-), (/))
+import Prelude (Unit, discard, flip, map, min, ($), (*), (+), (-), (/))
 import UI (DecisionColors)
-import V (Decision, Dir(..), lookupDim)
+import V (Decision, Dir(..), Dim, lookupDim, notInDec)
+import Vis (VVis(..), removeCoord, selectVis, visDims)
 import Vis.Types (Orientation(..), VVis(..))
 
--- | The main entry point for rendering a visualization by parsing it and
--- | recursively diving up the space.
+-- The main entry point for parsing apart a visualization and rendering it.
+-- Before we can actually get to the work of doing this, we need to check
+-- whether there are unselected dimensions, in which case we render small
+-- multiples.
+parseVisV :: forall m.
+  Context2D ->
+  Decision ->
+  DecisionColors ->
+  VVis Number ->
+  Rectangle ->
+  Eff (CEffects m) Unit
+parseVisV ctx dec cs v r = do
+  let vs = filter (flip notInDec dec) (visDims v)
+  smallMult vs ctx dec cs v r
+
+-- | Deal with small multiples before rendering individual visualization(s)
+smallMult :: forall m.
+  List Dim ->
+  Context2D ->
+  Decision ->
+  DecisionColors ->
+  VVis Number ->
+  Rectangle ->
+  Eff (CEffects m) Unit
+smallMult Nil ctx dec cs v r = do
+  drawSMRect ctx r
+  parseVis ctx dec cs v (Cartesian r)
+smallMult (d : ds) ctx dec cs v r = do
+  let (Tuple rl rr) = splitHalf r
+  smallMult ds ctx dec cs (selectVis (singleton d L) v) rl
+  smallMult ds ctx dec cs (selectVis (singleton d R) v) rr
+
+-- | A helper function to split a rectangle in half.  Ideally this would be
+-- | abstracted into the same function as the splitBox family, but we need a
+-- | clever approach to avoid tons of annoying type unwrapping.
+splitHalf :: Rectangle -> Tuple Rectangle Rectangle
+splitHalf (Rectangle r) =
+  Tuple (Rectangle { x: r.x              , y: r.y, w: r.w / 2.0, h: r.h } )
+        (Rectangle { x: r.x + (r.w / 2.0), y: r.y, w: r.w / 2.0, h: r.h } )
+
+-- | The starting point for rendering a single visualization (not small
+-- | multiples) by parsing it and recursively diving up the space.
 parseVis :: forall m.
   Context2D ->
   Decision ->
@@ -83,8 +126,12 @@ parseVis ctx dec cs (V d l r) sp = do
     Just col -> drawVHint ctx col sp
     _        -> drawVHint ctx black sp
 
-parseVis ctx dec cs (MkCartesian v) s = parseVis ctx dec cs v (toCartesian s)
-parseVis ctx dec cs (MkPolar v)     s = parseVis ctx dec cs v (toPolar s)
+-- The removeCoord stuff shouldn't be here, but instead should be done when
+-- applying the appropriate transformation functions.  This is a hack.
+parseVis ctx dec cs (MkCartesian v) s =
+  parseVis ctx dec cs (removeCoord v) (toCartesian s)
+parseVis ctx dec cs (MkPolar v) s =
+  parseVis ctx dec cs (removeCoord v) (toPolar s)
 
 parseVis ctx dec cs (Fill f) (Cartesian r) =
   case f.orientation of
@@ -94,7 +141,6 @@ parseVis ctx dec cs (Fill f) (Polar w) =
   case f.orientation of
     OrientVertical -> drawWedgeV ctx f.val w f.frame f.label f.color
     OrientHorizontal -> drawWedgeH ctx f.val w f.frame f.label f.color
-
 
 -- | Draw some visual indicator that part of a chart contains variability.
 drawVHint :: forall m. Context2D -> Color -> Space -> Eff (CEffects m) Unit
@@ -183,8 +229,8 @@ toPolar (Cartesian r) = Polar (toWedge r)
 toPolar s = s
 
 toWedge :: Rectangle -> Wedge
-toWedge (Rectangle r) = Wedge { x: (r.x + r.w) / 2.0
-                              , y: (r.y + r.h) / 2.0
+toWedge (Rectangle r) = Wedge { x: r.x + (r.w / 2.0)
+                              , y: r.y + (r.h / 2.0)
                               , inRad: 0.0
                               , outRad: (min r.h r.w) / 2.0
                               , startAngle: 0.0

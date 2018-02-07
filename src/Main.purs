@@ -63,11 +63,15 @@ vs2 = [ One 2.3, One 6.8, One (-1.0), Chc "Dim3" (One 1.0) (One 4.0),
         Chc "Dim4" (Chc "Dim5" (One 5.0) (One (-2.0))) (One 3.2) ]
 
 v1 :: VVis Number
-v1 = MkPolar $ NextTo { orientation: OrientVertical
-                      , vs: fillsV vs1
-                      }
+v1 = NextTo { orientation: OrientVertical
+            , vs: fillsV vs1
+            }
 
 v2 :: VVis Number
-v2 = Above { orientation: OrientHorizontal
+v2 = MkPolar v1
+
+
+v3 :: VVis Number
+v3 = Above { orientation: OrientHorizontal
            , vs: fillsH vs2
            }

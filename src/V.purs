@@ -4,6 +4,7 @@ module V
   , emptyDec
   , leftDec
   , lookupDim
+  , notInDec
   , plainVals
   , showDec
   , showDecM
@@ -14,10 +15,11 @@ module V
 import Data.List (List(..), (:), nub, sort)
 import Data.List.NonEmpty (singleton)
 import Data.List.Types (NonEmptyList)
+import Data.Map (member)
 import Data.Map as M
 import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple (Tuple(..))
-import Prelude (flip, map, ($), (<<<), (<>))
+import Prelude (flip, map, not, ($), (<<<), (<>))
 import V.Types (Decision, Dim, Dir(..), V(..))
 
 --------------------------------------------------------------------------------
@@ -61,6 +63,9 @@ toggleDim dim dec = M.update flop dim dec
 plainVals :: forall a. V a -> NonEmptyList a
 plainVals (One x) = singleton x
 plainVals (Chc d l r) = plainVals l <> plainVals r
+
+notInDec :: Dim -> Decision -> Boolean
+notInDec = not <<< member
 
 --------------------------------------------------------------------------------
 --- Constructing or generating particular kinds of V types.
