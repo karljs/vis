@@ -1,7 +1,7 @@
 module V.Types where
 
 import Data.Map as M
-import Prelude (class Show)
+import Prelude (class Eq, class Show)
 
 -- | Dimensions give names to choices and synchronize choices that share
 -- | dimensions.
@@ -17,6 +17,11 @@ data Dir = L | R
 instance showDir :: Show Dir where
   show L = "L"
   show R = "R"
+
+instance eqDir :: Eq Dir where
+  eq L L = true
+  eq R R = true
+  eq _ _ = false
 
 -- | Decisions encode sets of selectors
 type Decision = M.Map Dim Dir

@@ -14,6 +14,7 @@ module Vis
 import Color (Color)
 import Data.List (List(..), concatMap, (:))
 import Data.List.NonEmpty (NonEmptyList, head, toList, zipWith)
+import Data.Map (empty)
 import Data.Maybe (Maybe(..), maybe)
 import Prelude (flip, map, (<<<), (<>))
 import V (Decision, Dim, Dir(..), leftDec, lookupDim)
@@ -94,7 +95,8 @@ selectVis dec (MkPolar v) = MkPolar (selectVis dec v)
 -- | Generate an initial (view) decision for a particular visualization.
 -- | Generally this will be all left selections.
 visInitDec :: forall a. VVis a -> Decision
-visInitDec v = leftDec (visDims v)
+visInitDec v = empty
+  -- leftDec (visDims v)
 
 -- | Extract all the dimensions from a visualization
 visDims :: forall a. VVis a -> List Dim

@@ -27,7 +27,9 @@ type UIState a = { viewDec :: Decision
 -- | The query algebra for the UI component.  It supports toggling a dimension
 -- | in the view decision and querying the view decision.
 data UIQuery a
-  = Toggle Dim a
+  = ToggleL Dim a
+  | ToggleR Dim a
+  | OnOff Dim a
   | ViewDec (Tuple Decision DecisionColors -> a)
 
 -- | The input to the UI component is just a visualization, from which we
