@@ -5,7 +5,7 @@ module Canvas.Drawing.Polar
   ) where
 
 import Canvas.Types (Wedge(..), CEffects)
-import Color (Color, toHexString)
+import Color (Color, cssStringRGBA)
 import Control.Monad.Eff (Eff)
 import Data.Maybe (Maybe, maybe)
 import Data.Tuple (Tuple(..))
@@ -24,7 +24,7 @@ drawWedgeH :: forall m.
   Color ->
   Eff (CEffects m) Unit
 drawWedgeH ctx v (Wedge w) (Frame f) ml col = do
-  setFillStyle ctx (toHexString col)
+  setFillStyle ctx (cssStringRGBA col)
   setStrokeStyle ctx "#ffffff"
   setLineDash ctx []
   setLineWidth ctx 1.0
@@ -47,7 +47,7 @@ drawWedgeV ctx v' (Wedge w) (Frame f) ml col = do
                            (Tuple w.inRad w.outRad)
       z = convertRange 0.0 (Tuple f.frameMin f.frameMax)
                            (Tuple w.inRad w.outRad)
-  setFillStyle ctx (toHexString col)
+  setFillStyle ctx (cssStringRGBA col)
   setStrokeStyle ctx "#ffffff"
   setLineDash ctx []
   setLineWidth ctx 1.0
@@ -69,7 +69,7 @@ drawWedgeV ctx v' (Wedge w) (Frame f) ml col = do
 
 drawHintWedge :: forall m. Context2D -> Color -> Wedge -> Eff (CEffects m) Unit
 drawHintWedge ctx col w = do
-  setStrokeStyle ctx (toHexString col)
+  setStrokeStyle ctx (cssStringRGBA col)
   setLineDash ctx [15.0, 5.0]
   setLineWidth ctx 4.0
   strokeWedge ctx w

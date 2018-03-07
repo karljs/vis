@@ -11,12 +11,14 @@ module Vis.Types
   , fillsH
   , fillsV
   , nextTo
+  , overlay
   ) where
 
 import Color (Color, black)
+import Color.Scheme.MaterialDesign (green)
 import Data.Array (toUnfoldable)
 import Data.List (List)
-import Data.List.NonEmpty (NonEmptyList, foldr, fromList)
+import Data.List.NonEmpty (NonEmptyList, cons, foldr, fromList, singleton)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Show (class Show, show)
 import Data.Tuple (Tuple(..))
@@ -42,6 +44,7 @@ data VVis a
           }
   | MkCartesian (VVis a)
   | MkPolar (VVis a)
+  | Overlay { vs :: (NonEmptyList (VVis a)) }
 
 instance showVVis :: Show a => Show (VVis a) where
   show (Fill f) = "Fill " <> show f.val <> " "
@@ -55,6 +58,8 @@ instance showVVis :: Show a => Show (VVis a) where
     "Above\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show v.vs))
   show (MkCartesian v) = "Cartesian\n" <> show v
   show (MkPolar v) = "Polar\n" <> show v
+  show (Overlay o) =
+    "Overlay\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show o.vs))
 
 -- | A frame represents the context into which we map the values being charted.
 -- | Currently this just tracks the minimum and maximum values in a chart.
@@ -124,7 +129,7 @@ vFill f o (One v) =
        , frame: f
        , orientation: o
        , label: Just (defaultLabel v)
-       , color: black
+       , color: green
        }
 vFill f o (Chc d l r) = V d (vFill f o l) (vFill f o r)
 
@@ -154,3 +159,8 @@ above' vs = Above { orientation: OrientHorizontal
 -- | composing with `Above`.
 above :: forall a. Array (VVis a) -> VVis a
 above vs = above' $ toUnfoldable vs
+
+
+-- | Overlay the first visualization over the second
+overlay :: forall a. VVis a -> VVis a -> VVis a
+overlay v1 v2 = Overlay { vs: cons v1 (singleton v2) }

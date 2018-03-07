@@ -6,7 +6,7 @@ module Canvas.Drawing.Rectangular
   )where
 
 import Canvas.Types (CEffects, Rectangle(..))
-import Color (Color, black, toHexString, white)
+import Color (Color, black, cssStringRGBA, white)
 import Control.Monad.Eff (Eff)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
@@ -27,7 +27,7 @@ drawBarV :: forall m.
 drawBarV ctx v' (Rectangle r) (Frame f) ml col = do
   let v = convertRange v' (Tuple f.frameMin f.frameMax) (Tuple (r.y + r.h) r.y)
       z = convertRange 0.0 (Tuple f.frameMin f.frameMax) (Tuple (r.y + r.h) r.y)
-  setFillStyle ctx (toHexString col)
+  setFillStyle ctx (cssStringRGBA col)
   setStrokeStyle ctx "#ffffff"
   setLineDash ctx []
   setLineWidth ctx 1.0
@@ -57,7 +57,7 @@ drawBarH :: forall m.
 drawBarH ctx v' (Rectangle r) (Frame f) ml col = do
   let v = convertRange v' (Tuple f.frameMin f.frameMax) (Tuple r.x (r.x + r.w))
       z = convertRange 0.0 (Tuple f.frameMin f.frameMax) (Tuple r.x (r.x + r.w))
-  setFillStyle ctx (toHexString col)
+  setFillStyle ctx (cssStringRGBA col)
   setLineDash ctx []
   setStrokeStyle ctx "#ffffff"
   setLineWidth ctx 1.0
@@ -79,8 +79,8 @@ drawBarH ctx v' (Rectangle r) (Frame f) ml col = do
 -- | apart.
 drawSMRect :: forall m. Context2D -> Rectangle -> Eff (CEffects m) Unit
 drawSMRect ctx (Rectangle r) = do
-  setFillStyle ctx (toHexString white)
-  setStrokeStyle ctx (toHexString black)
+  setFillStyle ctx (cssStringRGBA white)
+  setStrokeStyle ctx (cssStringRGBA black)
   setLineDash ctx []
   setLineWidth ctx 1.0
   strokeRect ctx r
@@ -139,7 +139,7 @@ drawLabelCommon ctx tx ty (Label l) = do
 drawHintRect :: forall m.
   Context2D -> Color -> Rectangle -> Eff (CEffects m) Unit
 drawHintRect ctx col (Rectangle r) = do
-  setStrokeStyle ctx (toHexString col)
+  setStrokeStyle ctx (cssStringRGBA col)
   setLineDash ctx [15.0, 5.0]
   setLineWidth ctx 4.0
   strokeRect ctx r

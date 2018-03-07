@@ -25,7 +25,7 @@ import Control.Monad.Eff (Eff)
 import Data.Foldable (sequence_, sum)
 import Data.Int (toNumber)
 import Data.List (List(..), filter, zipWith, (:))
-import Data.List.NonEmpty (length, toList)
+import Data.List.NonEmpty (length, reverse, toList)
 import Data.Map (lookup, singleton)
 import Data.Maybe (Maybe(..))
 import Data.Ord (abs)
@@ -116,6 +116,9 @@ parseVis ctx dec cs (Above v) (Polar w) = do
              OrientHorizontal ->
                splitWedgeVEven w (length v.vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) ws
+
+parseVis ctx dec cs (Overlay v) sp = do
+  sequence_ $ map (\vis -> parseVis ctx dec cs vis sp) (reverse v.vs)
 
 parseVis ctx dec cs (V d l r) sp = do
   case lookupDim d dec of
