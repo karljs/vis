@@ -34,7 +34,7 @@ import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 import Prelude (Unit, bind, negate, ($))
 import V (V(..))
-import Vis (Orientation(..), color, color1, reorient, rotate)
+import Vis
 import Vis.Types (Frame(..), VVis(..), above, fillsH, fillsV, nextTo, overlay)
 import VisColor (defaultColors)
 

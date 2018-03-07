@@ -12,9 +12,10 @@ module Vis.Types
   , fillsV
   , nextTo
   , overlay
+  , spaceFillV
   ) where
 
-import Color (Color, black)
+import Color (Color, white)
 import Color.Scheme.MaterialDesign (green)
 import Data.Array (toUnfoldable)
 import Data.List (List)
@@ -132,6 +133,14 @@ vFill f o (One v) =
        , color: green
        }
 vFill f o (Chc d l r) = V d (vFill f o l) (vFill f o r)
+
+spaceFillV :: Number -> VVis Number
+spaceFillV n = Fill { val: 0.0
+                   , frame: Frame { frameMin: 0.0, frameMax: 1.0 }
+                   , orientation: OrientVertical
+                   , label: Nothing
+                   , color: white
+                   }
 
 defaultLabel :: forall a. Show a => a -> Label
 defaultLabel v = Label { text: show v

@@ -1,11 +1,16 @@
 module Vis
   ( module Vis.Types
+
   , color
   , color1
   , flop
   , removeCoord
   , reorient
   , rotate
+
+  , consSpace
+  , snocSpace
+
   , selectVis
   , selectVisM
   , visDims
@@ -14,12 +19,13 @@ module Vis
 
 import Color (Color)
 import Data.List (List(..), concatMap, (:))
-import Data.List.NonEmpty (NonEmptyList, head, toList, zipWith)
+import Data.List.NonEmpty (NonEmptyList, cons, head, singleton, snoc, toList, zipWith)
 import Data.Map (empty)
 import Data.Maybe (Maybe(..), maybe)
+import Halogen.HTML.Properties.ARIA (orientation)
 import Prelude (flip, map, (<<<), (<>))
 import V (Decision, Dim, Dir(..), lookupDim)
-import Vis.Types (Orientation(..), VVis(..))
+import Vis.Types (Orientation(..), VVis(..), spaceFillV)
 
 --------------------------------------------------------------------------------
 -- Transformations
@@ -67,6 +73,18 @@ removeCoord (Above v) = Above (v { vs = map removeCoord v.vs })
 removeCoord (MkCartesian v) = removeCoord v
 removeCoord (MkPolar v) = removeCoord v
 removeCoord (Overlay v) = Overlay (v { vs = map removeCoord v.vs })
+
+consSpace :: forall a. VVis Number -> Number -> VVis Number
+consSpace (NextTo v) n = NextTo ( v { vs = cons (spaceFillV n) v.vs })
+consSpace v n = NextTo { vs: (cons (spaceFillV n) (singleton v))
+                       , orientation: OrientVertical
+                       }
+
+snocSpace :: forall a. VVis Number -> Number -> VVis Number
+snocSpace (NextTo v) n = NextTo ( v { vs = snoc v.vs (spaceFillV n) })
+snocSpace v n = NextTo { vs: (cons v (singleton (spaceFillV n)))
+                       , orientation: OrientVertical
+                       }
 
 --------------------------------------------------------------------------------
 -- Aesthetics and style functions
