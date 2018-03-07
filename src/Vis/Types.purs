@@ -12,6 +12,7 @@ module Vis.Types
   , fillsV
   , nextTo
   , overlay
+  , overlayFlat
 
   , hspace
   , vspace
@@ -27,8 +28,8 @@ import Data.Show (class Show, show)
 import Data.Tuple (Tuple(..))
 import Math (max, min)
 import Partial.Unsafe (unsafePartial)
-import Prelude (class Eq, flip, map, ($), (<>))
-import Util (vmaximum, vminimum)
+import Prelude (class Eq, class Ord, flip, map, ($), (<>))
+import Util (maximum, minimum, vmaximum, vminimum)
 import V (Dim, V(..))
 
 -- | The primary type of a visualization
@@ -188,3 +189,40 @@ above vs = above' $ toUnfoldable vs
 -- | Overlay the first visualization over the second
 overlay :: forall a. VVis a -> VVis a -> VVis a
 overlay v1 v2 = Overlay { vs: cons v1 (singleton v2) }
+
+overlayFlat :: forall a. VVis Number -> VVis Number -> VVis Number
+overlayFlat v1 v2 = let mx = max (maxVal v1) (maxVal v2)
+                        mn = min (minVal v1) (minVal v2)
+                        v1f = setFrame (Frame { frameMin: mn, frameMax: mx }) v1
+                        v2f = setFrame (Frame { frameMin: mn, frameMax: mx }) v2
+                    in Overlay { vs: cons v1f (singleton v2f) }
+
+setFrame :: forall a. Frame a -> VVis a -> VVis a
+setFrame fr (Fill f) = Fill (f { frame = fr })
+setFrame fr (V d l r) = V d (setFrame fr l) (setFrame fr r)
+setFrame fr (NextTo v) = NextTo (v { vs = map (setFrame fr) v.vs })
+setFrame fr (Above v) = Above (v { vs = map (setFrame fr) v.vs })
+setFrame fr (MkCartesian v) = MkCartesian (setFrame fr v)
+setFrame fr (MkPolar v) = MkPolar (setFrame fr v)
+setFrame fr (Overlay v) = Overlay (v { vs = map (setFrame fr) v.vs })
+
+--------------------------------------------------------------------------------
+-- Queries
+
+maxVal :: VVis Number -> Number
+maxVal (Fill f) = let (Frame fr) = f.frame in fr.frameMax
+maxVal (V d l r) = max (maxVal l) (maxVal r)
+maxVal (NextTo v) = maximum $ map maxVal v.vs
+maxVal (Above v) = maximum $ map maxVal v.vs
+maxVal (MkCartesian v) = maxVal v
+maxVal (MkPolar v) = maxVal v
+maxVal (Overlay v) = maximum $ map maxVal v.vs
+
+minVal :: VVis Number -> Number
+minVal (Fill f) = let (Frame fr) = f.frame in fr.frameMin
+minVal (V d l r) = min (minVal l) (minVal r)
+minVal (NextTo v) = minimum $ map minVal v.vs
+minVal (Above v) = minimum $ map minVal v.vs
+minVal (MkCartesian v) = minVal v
+minVal (MkPolar v) = minVal v
+minVal (Overlay v) = minimum $ map minVal v.vs

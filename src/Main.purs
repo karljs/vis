@@ -28,7 +28,6 @@ import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Loops (whileJust)
 import DOM.HTML.Types (htmlElementToNode)
 import DOM.Node.Node (firstChild, removeChild)
-import Data.Array (reverse)
 import Graphics.Canvas (CANVAS)
 import Halogen as H
 import Halogen.Aff as HA
@@ -36,7 +35,7 @@ import Halogen.VDom.Driver (runUI)
 import Prelude (Unit, bind, negate, ($))
 import V (V(..))
 import Vis
-import Vis.Types (Frame(..), VVis(..), above, fillsH, fillsV, nextTo, overlay)
+import Vis.Types (Frame(..), VVis(..), above, fillsH, fillsV, nextTo, overlay, overlayFlat)
 import VisColor (defaultColors)
 
 main :: Eff (HA.HalogenEffects (canvas :: CANVAS, console :: CONSOLE)) Unit
@@ -80,6 +79,9 @@ vs3 = [ One 3.1, One (-1.0), One (-1.2), One 1.7, One 1.2, One 2.9, One 2.4
 vs4 :: Array (V Number)
 vs4 = [ One 0.4, One 0.8, One 1.2, One 1.6, One 2.0]
 
+vs5 :: Array (V Number)
+vs5 = [ One 0.3, One 0.4, One 1.0, One 2.1, One 1.0]
+
 v1 :: VVis Number
 v1 = NextTo { orientation: OrientVertical
             , vs: fillsV vs1
@@ -103,7 +105,7 @@ v4 = NextTo { orientation: OrientVertical
 
 v5 :: VVis Number
 v5 = NextTo { orientation: OrientVertical
-            , vs: fillsV (reverse vs4)
+            , vs: fillsV vs5
             }
 
 tblue :: Color
@@ -115,5 +117,7 @@ tgreen = let b = toRGBA green
          in rgba b.r b.g b.b 0.5
 
 overTest :: VVis Number
-overTest = overlay (v5 `color1` tblue `topSpace` 0.1 `rightSpace` 0.1)
-                   (v4 `bottomSpace` 0.1 `leftSpace` 0.1)
+overTest =
+  overlayFlat
+    (v4 `space` 0.25 `rightSpace` 0.02 `color1` tgreen)
+    (v5 `space` 0.25 `leftSpace` 0.02)

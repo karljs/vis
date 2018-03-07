@@ -8,6 +8,7 @@ module Vis
   , reorient
   , rotate
 
+  , space
   , leftSpace
   , rightSpace
   , topSpace
@@ -25,8 +26,9 @@ import Data.List.NonEmpty (NonEmptyList, cons, head, singleton, toList, zipWith)
 import Data.Map (empty)
 import Data.Maybe (Maybe(..), maybe)
 import Prelude (flip, map, (<<<), (<>))
+import Util (doUnsafeListOp, intersperse)
 import V (Decision, Dim, Dir(..), lookupDim)
-import Vis.Types (Orientation(..), VVis(..), hspace, vspace)
+import Vis.Types (Frame(..), Orientation(..), VVis(..), hspace, vspace)
 
 --------------------------------------------------------------------------------
 -- Transformations
@@ -75,9 +77,20 @@ removeCoord (MkCartesian v) = removeCoord v
 removeCoord (MkPolar v) = removeCoord v
 removeCoord (Overlay v) = Overlay (v { vs = map removeCoord v.vs })
 
--- space :: VVis Number -> Number -> VVis Number
--- space (NextTo v) n =
---   let sp =
+space :: VVis Number -> Number -> VVis Number
+space (NextTo v) n =
+  let newvs = doUnsafeListOp (intersperse (hspace n)) v.vs
+  in NextTo (v { vs = newvs })
+space (Above v) n =
+  let newvs = doUnsafeListOp (intersperse (vspace n)) v.vs
+  in Above (v { vs = newvs })
+space (V d l r) n = V d (space l n) (space r n)
+space (MkCartesian v) n = MkCartesian (space v n)
+space (MkPolar v) n = MkPolar (space v n)
+space (Overlay v) n =
+  let newvs = doUnsafeListOp (intersperse (vspace n)) v.vs
+  in Overlay (v { vs = newvs })
+space (Fill v) _ = Fill v
 
 leftSpace :: VVis Number -> Number -> VVis Number
 leftSpace v n = NextTo { vs: (cons (hspace n) (singleton v))

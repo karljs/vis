@@ -5,12 +5,19 @@ module Util
   , minimum
   , vmaximum
   , vminimum
+
+  , intersperse
+  , prependToAll
+
+  , doUnsafeListOp
   ) where
 
-import Data.List.NonEmpty (concatMap)
-import Data.List.Types (NonEmptyList(..))
+import Data.List.NonEmpty (concatMap, fromList, toUnfoldable)
+import Data.List.Types (List(..), NonEmptyList(..), (:))
+import Data.Maybe (fromJust)
 import Data.NonEmpty (foldl1)
 import Data.Tuple (Tuple(..))
+import Partial.Unsafe (unsafePartial)
 import Prelude (class Ord, max, min, ($), (*), (+), (-), (/))
 import V (plainVals)
 import V.Types (V)
@@ -36,3 +43,20 @@ vmaximum vs = maximum $ concatMap plainVals vs
 -- | Get the minimum value from a nonemtpy list of variational values
 vminimum :: forall a. (Ord a) => NonEmptyList (V a) -> a
 vminimum vs = minimum $ concatMap plainVals vs
+
+-- | Intersperse an element between each pair in a list, borrowed from the
+-- | Haskell prelude.
+intersperse :: forall a. a -> List a -> List a
+intersperse _ Nil = Nil
+intersperse sep (x : xs)  = x : prependToAll sep xs
+
+prependToAll :: forall a. a -> List a -> List a
+prependToAll _ Nil = Nil
+prependToAll sep (x : xs) = sep : x : prependToAll sep xs
+
+doUnsafeListOp :: forall a.
+  (List a -> List a) ->
+  (NonEmptyList a -> NonEmptyList a)
+doUnsafeListOp f ne =
+  let l = f (toUnfoldable ne)
+  in unsafePartial (fromJust $ fromList l)
