@@ -2,10 +2,8 @@ module Canvas.Drawing
   ( parseVis
   , parseVisV
 
-  , splitBoxHEven
-  , splitBoxHOdd
-  , splitBoxVEven
-  , splitBoxVOdd
+  , splitBoxH
+  , splitBoxV
   , splitWedgeHEven
   , splitWedgeHOdd
   , splitWedgeVEven
@@ -32,10 +30,11 @@ import Data.Ord (abs)
 import Data.Tuple (Tuple(..))
 import Graphics.Canvas (Context2D)
 import Math (pi)
-import Prelude (Unit, discard, flip, map, min, ($), (*), (+), (-), (/))
+import Prelude (Unit, discard, flip, map, min, not, pure, unit, ($), (*), (+), (-), (/))
 import UI (DecisionColors)
+import Util (convertRange)
 import V (Decision, Dir(..), Dim, lookupDim, notInDec)
-import Vis (VVis(..), removeCoord, selectVis, visDims)
+import Vis (Orientation(..), VVis(..), removeCoord, selectVis, visDims)
 import Vis.Types (Orientation(..), VVis(..))
 
 -- The main entry point for parsing apart a visualization and rendering it.
@@ -63,8 +62,8 @@ smallMult :: forall m.
   Rectangle ->
   Eff (CEffects m) Unit
 smallMult Nil ctx dec cs v r = do
-  drawSMRect ctx r
   parseVis ctx dec cs v (Cartesian r)
+  drawSMRect ctx r
 smallMult (d : ds) ctx dec cs v r = do
   let (Tuple rl rr) = splitHalf r
   smallMult ds ctx dec cs (selectVis (singleton d L) v) rl
@@ -88,33 +87,17 @@ parseVis :: forall m.
   Space ->
   Eff (CEffects m) Unit
 parseVis ctx dec cs (NextTo v) (Cartesian r) = do
-  let bs = case v.orientation of
-             OrientVertical ->
-               splitBoxHEven r (length v.vs)
-             OrientHorizontal ->
-               splitBoxHOdd r (toList $ map (relativeSize dec) v.vs)
+  let bs = splitBoxH r (toList $ map (relativeWidth dec) v.vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) bs
 parseVis ctx dec cs (NextTo v) (Polar w) = do
-  let ws = case v.orientation of
-             OrientVertical ->
-               splitWedgeHEven w (length v.vs)
-             OrientHorizontal ->
-               splitWedgeHOdd w (toList $ map (relativeSize dec) v.vs)
+  let ws = splitWedgeHOdd w (toList $ map (relativeWidth dec) v.vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) ws
 
 parseVis ctx dec cs (Above v) (Cartesian r) = do
-  let bs = case v.orientation of
-             OrientVertical ->
-               splitBoxVOdd r (toList $ map (relativeSize dec) v.vs)
-             OrientHorizontal ->
-               splitBoxVEven r (length v.vs)
+  let bs = splitBoxV r (toList $ map (relativeHeight dec) v.vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) bs
 parseVis ctx dec cs (Above v) (Polar w) = do
-  let ws = case v.orientation of
-             OrientVertical ->
-               splitWedgeVOdd w (toList $ map (relativeSize dec) v.vs)
-             OrientHorizontal ->
-               splitWedgeVEven w (length v.vs)
+  let ws = splitWedgeVOdd w (toList $ map (relativeHeight dec) v.vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) ws
 
 parseVis ctx dec cs (Overlay v) sp = do
@@ -137,9 +120,11 @@ parseVis ctx dec cs (MkPolar v) s =
   parseVis ctx dec cs (removeCoord v) (toPolar s)
 
 parseVis ctx dec cs (Fill f) (Cartesian r) =
-  case f.orientation of
-    OrientVertical -> drawBarV ctx f.val r f.frame f.label f.color
-    OrientHorizontal -> drawBarH ctx f.val r f.frame f.label f.color
+  if not f.space
+  then case f.orientation of
+         OrientVertical -> drawBarV ctx f.val r f.frame f.label f.color
+         OrientHorizontal -> drawBarH ctx f.val r f.frame f.label f.color
+  else pure unit
 parseVis ctx dec cs (Fill f) (Polar w) =
   case f.orientation of
     OrientVertical -> drawWedgeV ctx f.val w f.frame f.label f.color
@@ -150,40 +135,60 @@ drawVHint :: forall m. Context2D -> Color -> Space -> Eff (CEffects m) Unit
 drawVHint ctx col (Cartesian r) = drawHintRect ctx col r
 drawVHint ctx col (Polar w) = drawHintWedge ctx col w
 
-relativeSize :: Decision -> VVis Number -> Number
-relativeSize _ (Fill f) = abs f.val
-relativeSize dec (V d l r) =
+-- | Determine the relative width a visualization component needs, which is
+-- | useful when we are dividing up the space for rendering.
+relativeWidth :: Decision -> VVis Number -> Number
+relativeWidth _ (Fill f) = case f.orientation of
+  OrientVertical -> 1.0
+  OrientHorizontal -> abs f.val
+relativeWidth dec (V d l r) =
   case lookupDim d dec of
-    Just L -> relativeSize dec l
-    Just R -> relativeSize dec r
+    Just L -> relativeWidth dec l
+    Just R -> relativeWidth dec r
     _      -> 1.0
-relativeSize _ _ = 1.0
+relativeWidth _ _ = 1.0
+
+relativeHeight :: Decision -> VVis Number -> Number
+relativeHeight _ (Fill f) = case f.orientation of
+  OrientVertical -> abs f.val
+  OrientHorizontal -> 1.0
+relativeHeight dec (V d l r) =
+  case lookupDim d dec of
+    Just L -> relativeHeight dec l
+    Just R -> relativeHeight dec r
+    _      -> 1.0
+relativeHeight _ _ = 1.0
+
 
 --------------------------------------------------------------------------------
 -- Functions related to splitting spaces
 
 -- | Divide a rectangular space into equal horizontal chunks.
-splitBoxHEven :: Rectangle -> Int -> List Space
-splitBoxHEven _ 0 = Nil
-splitBoxHEven (Rectangle r) i =
-  let newW = r.w / toNumber i
+splitBoxH :: Rectangle -> List Number -> List Space
+splitBoxH r vs =
+  splitBoxHT r r (map (\v -> v / (sum vs)) vs)
+
+splitBoxHT :: Rectangle -> Rectangle -> List Number -> List Space
+splitBoxHT _ _ Nil = Nil
+splitBoxHT (Rectangle orig) (Rectangle r) (v : vs) =
+  let newW = v * orig.w
   in Cartesian (Rectangle (r { w = newW })) :
-       splitBoxHEven (Rectangle (r { x = r.x + newW, w = r.w - newW })) (i - 1)
+       splitBoxHT (Rectangle orig)
+                  (Rectangle (r { x = r.x + newW, w = r.w - newW } ))
+                  vs
 
--- | Divide a rectangular space into equal horizontal chunks.
-splitBoxHOdd :: Rectangle -> List Number -> List Space
-splitBoxHOdd _ _ = Nil
+splitBoxV :: Rectangle -> List Number -> List Space
+splitBoxV r vs =
+  splitBoxVT r r (map (\v -> v / (sum vs)) vs)
 
--- | Divide a rectangular space into equal vertical chunks.
-splitBoxVEven :: Rectangle -> Int -> List Space
-splitBoxVEven _ 0 = Nil
-splitBoxVEven (Rectangle r) i =
-  let newH = r.h / toNumber i
+splitBoxVT :: Rectangle -> Rectangle -> List Number -> List Space
+splitBoxVT _ _ Nil = Nil
+splitBoxVT (Rectangle orig) (Rectangle r) (v : vs) =
+  let newH = v * orig.h
   in Cartesian (Rectangle (r { h = newH })) :
-       splitBoxVEven (Rectangle (r { y = r.y + newH, h = r.h - newH })) (i - 1)
-
-splitBoxVOdd :: Rectangle -> List Number -> List Space
-splitBoxVOdd _ _ = Nil
+       splitBoxVT (Rectangle orig)
+                  (Rectangle (r { y = r.y + newH, h = r.h - newH } ))
+                  vs
 
 -- | Divide a wedge into equal sub-spaces by angle such as for a coxcomb
 -- | chart.

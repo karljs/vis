@@ -7,6 +7,7 @@ module Canvas.Types
   , Space(..)
   , UISlot(..)
   , Wedge(..)
+  , unitRect
   ) where
 
 import Control.Monad.Eff.Console (CONSOLE)
@@ -37,6 +38,9 @@ data Rectangle = Rectangle
   , w :: Number
   , h :: Number
   }
+
+unitRect :: Rectangle
+unitRect = Rectangle { x: 0.0, y: 0.0, w: 1.0, h: 1.0 }
 
 instance showRectangle :: Show Rectangle where
   show (Rectangle r) = "Rectangle (" <> show r.x <> ", " <> show r.y <> ") "

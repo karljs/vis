@@ -8,6 +8,7 @@ module Main
   , go
   , k
   , main
+  , overTest
   , tblue
   , tgreen
   , v1
@@ -77,7 +78,7 @@ vs3 = [ One 3.1, One (-1.0), One (-1.2), One 1.7, One 1.2, One 2.9, One 2.4
       , One (-2.5), One 2.1, One 2.3 ]
 
 vs4 :: Array (V Number)
-vs4 = [ One 1.0, One 1.2, One 1.4, One 1.6, One 1.8, One 2.0]
+vs4 = [ One 0.4, One 0.8, One 1.2, One 1.6, One 2.0]
 
 v1 :: VVis Number
 v1 = NextTo { orientation: OrientVertical
@@ -112,3 +113,7 @@ tblue = let b = toRGBA blue
 tgreen :: Color
 tgreen = let b = toRGBA green
          in rgba b.r b.g b.b 0.5
+
+overTest :: VVis Number
+overTest = overlay (v5 `color1` tblue `topSpace` 0.1 `rightSpace` 0.1)
+                   (v4 `bottomSpace` 0.1 `leftSpace` 0.1)

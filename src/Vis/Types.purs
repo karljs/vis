@@ -12,6 +12,7 @@ module Vis.Types
   , fillsV
   , nextTo
   , overlay
+  , spaceFillH
   , spaceFillV
   ) where
 
@@ -23,6 +24,7 @@ import Data.List.NonEmpty (NonEmptyList, cons, foldr, fromList, singleton)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Show (class Show, show)
 import Data.Tuple (Tuple(..))
+import Math (max, min)
 import Partial.Unsafe (unsafePartial)
 import Prelude (class Eq, flip, map, ($), (<>))
 import Util (vmaximum, vminimum)
@@ -35,6 +37,7 @@ data VVis a
          , orientation :: Orientation
          , label :: Maybe Label
          , color :: Color
+         , space :: Boolean  -- TODO: Fix this hack and define a type
          }
   | V Dim (VVis a) (VVis a)
   | NextTo { orientation :: Orientation
@@ -110,9 +113,12 @@ data LabelPositionH = HPosLeft | HPosMiddle | HPosRight
 -- | visualizations.
 fills' :: List (V Number) -> Orientation -> NonEmptyList (VVis Number)
 fills' vs o =
-  let vs' = unsafePartial $ fromJust (fromList vs)
-      f = Frame { frameMax: vmaximum vs', frameMin: vminimum vs' }
-  in map (vFill f o) vs'
+  let vs'  = unsafePartial $ fromJust (fromList vs)
+      fmin = min (vminimum vs') 0.0
+      fmax = max (vmaximum vs') 0.0
+      frm  = Frame { frameMax: fmax
+                   , frameMin: fmin }
+  in map (vFill frm o) vs'
 
 fills :: Array (V Number) -> Orientation -> NonEmptyList (VVis Number)
 fills vs o = fills' (toUnfoldable vs) o
@@ -131,16 +137,24 @@ vFill f o (One v) =
        , orientation: o
        , label: Just (defaultLabel v)
        , color: green
+       , space: false
        }
 vFill f o (Chc d l r) = V d (vFill f o l) (vFill f o r)
 
 spaceFillV :: Number -> VVis Number
-spaceFillV n = Fill { val: 0.0
-                   , frame: Frame { frameMin: 0.0, frameMax: 1.0 }
-                   , orientation: OrientVertical
-                   , label: Nothing
-                   , color: white
-                   }
+spaceFillV n = spaceFill n OrientHorizontal
+
+spaceFillH :: Number -> VVis Number
+spaceFillH n = spaceFill n OrientVertical
+
+spaceFill :: Number -> Orientation -> VVis Number
+spaceFill n o = Fill { val: n
+                     , frame: Frame { frameMin: 0.0, frameMax: 1.0 }
+                     , orientation: o
+                     , label: Nothing
+                     , color: white
+                     , space: true
+                     }
 
 defaultLabel :: forall a. Show a => a -> Label
 defaultLabel v = Label { text: show v

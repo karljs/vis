@@ -8,8 +8,10 @@ module Vis
   , reorient
   , rotate
 
-  , consSpace
-  , snocSpace
+  , leftSpace
+  , rightSpace
+  , topSpace
+  , bottomSpace
 
   , selectVis
   , selectVisM
@@ -19,13 +21,12 @@ module Vis
 
 import Color (Color)
 import Data.List (List(..), concatMap, (:))
-import Data.List.NonEmpty (NonEmptyList, cons, head, singleton, snoc, toList, zipWith)
+import Data.List.NonEmpty (NonEmptyList, cons, head, singleton, toList, zipWith)
 import Data.Map (empty)
 import Data.Maybe (Maybe(..), maybe)
-import Halogen.HTML.Properties.ARIA (orientation)
 import Prelude (flip, map, (<<<), (<>))
 import V (Decision, Dim, Dir(..), lookupDim)
-import Vis.Types (Orientation(..), VVis(..), spaceFillV)
+import Vis.Types (Orientation(..), VVis(..), spaceFillH, spaceFillV)
 
 --------------------------------------------------------------------------------
 -- Transformations
@@ -74,17 +75,26 @@ removeCoord (MkCartesian v) = removeCoord v
 removeCoord (MkPolar v) = removeCoord v
 removeCoord (Overlay v) = Overlay (v { vs = map removeCoord v.vs })
 
-consSpace :: forall a. VVis Number -> Number -> VVis Number
-consSpace (NextTo v) n = NextTo ( v { vs = cons (spaceFillV n) v.vs })
-consSpace v n = NextTo { vs: (cons (spaceFillV n) (singleton v))
+leftSpace :: VVis Number -> Number -> VVis Number
+leftSpace v n = NextTo { vs: (cons (spaceFillV n) (singleton v))
                        , orientation: OrientVertical
                        }
 
-snocSpace :: forall a. VVis Number -> Number -> VVis Number
-snocSpace (NextTo v) n = NextTo ( v { vs = snoc v.vs (spaceFillV n) })
-snocSpace v n = NextTo { vs: (cons v (singleton (spaceFillV n)))
-                       , orientation: OrientVertical
-                       }
+rightSpace :: VVis Number -> Number -> VVis Number
+rightSpace v n = NextTo { vs: (cons v (singleton (spaceFillV n)))
+                        , orientation: OrientVertical
+                        }
+
+topSpace :: VVis Number -> Number -> VVis Number
+topSpace v n = Above { vs: (cons (spaceFillH n) (singleton v))
+                     , orientation: OrientVertical
+                     }
+
+bottomSpace :: VVis Number -> Number -> VVis Number
+bottomSpace v n = Above { vs: (cons v (singleton (spaceFillH n)))
+                        , orientation: OrientVertical
+                        }
+
 
 --------------------------------------------------------------------------------
 -- Aesthetics and style functions
