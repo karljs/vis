@@ -12,8 +12,9 @@ module Vis.Types
   , fillsV
   , nextTo
   , overlay
-  , spaceFillH
-  , spaceFillV
+
+  , hspace
+  , vspace
   ) where
 
 import Color (Color, white)
@@ -141,11 +142,11 @@ vFill f o (One v) =
        }
 vFill f o (Chc d l r) = V d (vFill f o l) (vFill f o r)
 
-spaceFillV :: Number -> VVis Number
-spaceFillV n = spaceFill n OrientHorizontal
+hspace :: Number -> VVis Number
+hspace n = spaceFill n OrientHorizontal
 
-spaceFillH :: Number -> VVis Number
-spaceFillH n = spaceFill n OrientVertical
+vspace :: Number -> VVis Number
+vspace n = spaceFill n OrientVertical
 
 spaceFill :: Number -> Orientation -> VVis Number
 spaceFill n o = Fill { val: n

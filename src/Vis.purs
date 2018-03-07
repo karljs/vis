@@ -26,7 +26,7 @@ import Data.Map (empty)
 import Data.Maybe (Maybe(..), maybe)
 import Prelude (flip, map, (<<<), (<>))
 import V (Decision, Dim, Dir(..), lookupDim)
-import Vis.Types (Orientation(..), VVis(..), spaceFillH, spaceFillV)
+import Vis.Types (Orientation(..), VVis(..), hspace, vspace)
 
 --------------------------------------------------------------------------------
 -- Transformations
@@ -75,23 +75,27 @@ removeCoord (MkCartesian v) = removeCoord v
 removeCoord (MkPolar v) = removeCoord v
 removeCoord (Overlay v) = Overlay (v { vs = map removeCoord v.vs })
 
+-- space :: VVis Number -> Number -> VVis Number
+-- space (NextTo v) n =
+--   let sp =
+
 leftSpace :: VVis Number -> Number -> VVis Number
-leftSpace v n = NextTo { vs: (cons (spaceFillV n) (singleton v))
+leftSpace v n = NextTo { vs: (cons (hspace n) (singleton v))
                        , orientation: OrientVertical
                        }
 
 rightSpace :: VVis Number -> Number -> VVis Number
-rightSpace v n = NextTo { vs: (cons v (singleton (spaceFillV n)))
+rightSpace v n = NextTo { vs: (cons v (singleton (hspace n)))
                         , orientation: OrientVertical
                         }
 
 topSpace :: VVis Number -> Number -> VVis Number
-topSpace v n = Above { vs: (cons (spaceFillH n) (singleton v))
+topSpace v n = Above { vs: (cons (vspace n) (singleton v))
                      , orientation: OrientVertical
                      }
 
 bottomSpace :: VVis Number -> Number -> VVis Number
-bottomSpace v n = Above { vs: (cons v (singleton (spaceFillH n)))
+bottomSpace v n = Above { vs: (cons v (singleton (vspace n)))
                         , orientation: OrientVertical
                         }
 
