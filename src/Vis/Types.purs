@@ -4,6 +4,7 @@ module Vis.Types
   , LabelPositionH(..)
   , LabelPositionV(..)
   , Orientation(..)
+  , VPs(..)
   , VVis(..)
   , above
   , above'
@@ -16,6 +17,8 @@ module Vis.Types
 
   , hspace
   , vspace
+
+  , maybe1
   ) where
 
 import Color (Color, white)
@@ -28,18 +31,15 @@ import Data.Show (class Show, show)
 import Data.Tuple (Tuple(..))
 import Math (max, min)
 import Partial.Unsafe (unsafePartial)
-import Prelude (class Eq, class Ord, flip, map, ($), (<>))
+import Prelude (class Eq, flip, map, ($), (<>))
 import Util (maximum, minimum, vmaximum, vminimum)
 import V (Dim, V(..))
 
 -- | The primary type of a visualization
 data VVis a
-  = Fill { val :: a
+  = Fill { vps :: VPs
          , frame :: Frame a
-         , orientation :: Orientation
          , label :: Maybe Label
-         , color :: Color
-         , space :: Boolean  -- TODO: Fix this hack and define a type
          }
   | V Dim (VVis a) (VVis a)
   | NextTo { orientation :: Orientation
@@ -53,10 +53,9 @@ data VVis a
   | Overlay { vs :: (NonEmptyList (VVis a)) }
 
 instance showVVis :: Show a => Show (VVis a) where
-  show (Fill f) = "Fill " <> show f.val <> " "
-                          <> show f.frame <> " "
-                          <> show f.orientation <> " label "
-                          <> show f.label
+  show (Fill f) = "Fill " <> show f.vps <> " "
+                          <> show f.frame
+                          <> " label " <> show f.label
   show (V d l r) = "V " <> d <> " " <> show l <> " " <> show r
   show (NextTo v) =
     "NextTo\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show v.vs))
@@ -66,6 +65,16 @@ instance showVVis :: Show a => Show (VVis a) where
   show (MkPolar v) = "Polar\n" <> show v
   show (Overlay o) =
     "Overlay\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show o.vs))
+
+data VPs = VPs
+  { height :: Maybe Number
+  , width :: Maybe Number
+  , color :: Color
+  , visible :: Boolean
+  }
+
+instance showVPs :: Show VPs where
+  show (VPs vp) = "(" <> show vp.height <> "," <> show vp.width <> ")"
 
 -- | A frame represents the context into which we map the values being charted.
 -- | Currently this just tracks the minimum and maximum values in a chart.
@@ -131,16 +140,21 @@ fillsV = flip fills OrientVertical
 fillsH :: Array (V Number) -> NonEmptyList (VVis Number)
 fillsH = flip fills OrientHorizontal
 
--- | For a variational number, product a `Fill` visualization.
+-- | For a variational number, produce a `Fill` visualization.
 vFill :: Frame Number -> Orientation -> V Number -> VVis Number
 vFill f o (One v) =
-  Fill { val: v
-       , frame: f
-       , orientation: o
-       , label: Just (defaultLabel v)
-       , color: green
-       , space: false
-       }
+  let (Tuple h w) = case o of
+                      OrientVertical -> Tuple (Just v) (Nothing)
+                      OrientHorizontal -> Tuple Nothing (Just v)
+      vp = VPs { height: h
+               , width: w
+               , color: green
+               , visible: true
+               }
+  in Fill { vps: vp
+          , frame: f
+          , label: Just (defaultLabel v)
+          }
 vFill f o (Chc d l r) = V d (vFill f o l) (vFill f o r)
 
 hspace :: Number -> VVis Number
@@ -150,13 +164,18 @@ vspace :: Number -> VVis Number
 vspace n = spaceFill n OrientVertical
 
 spaceFill :: Number -> Orientation -> VVis Number
-spaceFill n o = Fill { val: n
-                     , frame: Frame { frameMin: 0.0, frameMax: 1.0 }
-                     , orientation: o
-                     , label: Nothing
-                     , color: white
-                     , space: true
-                     }
+spaceFill n o =
+  let (Tuple h w) = case o of
+                      OrientVertical -> (Tuple (Just n) Nothing)
+                      OrientHorizontal -> (Tuple Nothing (Just n))
+      vp = VPs { height: h
+               , width: w
+               , color: white
+               , visible: false }
+  in Fill { vps: vp
+          , frame: Frame { frameMin: 0.0, frameMax: 1.0 }
+          , label: Nothing
+          }
 
 defaultLabel :: forall a. Show a => a -> Label
 defaultLabel v = Label { text: show v
@@ -226,3 +245,7 @@ minVal (Above v) = minimum $ map minVal v.vs
 minVal (MkCartesian v) = minVal v
 minVal (MkPolar v) = minVal v
 minVal (Overlay v) = minimum $ map minVal v.vs
+
+maybe1 :: Maybe Number -> Number
+maybe1 (Just n) = n
+maybe1 _ = 1.0

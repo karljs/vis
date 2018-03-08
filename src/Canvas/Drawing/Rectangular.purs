@@ -16,7 +16,7 @@ import Util (convertRange)
 import Vis.Types (Frame(..), Label(..))
 
 -- | Draw a vertically oriented rectangular bar.
-drawBarV :: forall m.
+drawBarV :: forall m r.
   Context2D ->
   Number ->
   Rectangle ->
@@ -46,7 +46,7 @@ drawBarV ctx v' (Rectangle r) (Frame f) ml col = do
               Nothing -> pure unit
 
 -- | Draw a horizontally oriented rectangular bar.
-drawBarH :: forall m.
+drawBarH :: forall m r.
   Context2D ->
   Number ->
   Rectangle ->

@@ -18,6 +18,12 @@ module Vis
   , selectVisM
   , visDims
   , visInitDec
+
+  , isVisible
+  , getColor
+  , getHeight
+  , getOrientation
+  , getWidth
   ) where
 
 import Color (Color)
@@ -28,14 +34,14 @@ import Data.Maybe (Maybe(..), maybe)
 import Prelude (flip, map, (<<<), (<>))
 import Util (doUnsafeListOp, intersperse)
 import V (Decision, Dim, Dir(..), lookupDim)
-import Vis.Types (Frame(..), Orientation(..), VVis(..), hspace, vspace)
+import Vis.Types (Frame(..), Orientation(..), VPs(..), VVis(..), hspace, maybe1, vspace)
 
 --------------------------------------------------------------------------------
 -- Transformations
 
 -- | Change the orientation between vertical and horizontal, or angle and radius
 reorient :: forall a. VVis a -> VVis a
-reorient (Fill f) = Fill (f { orientation = swapOrientation f.orientation })
+reorient (Fill f) = Fill (f { vps = swapWH f.vps })
 reorient (V d l r) = V d (reorient l) (reorient r)
 reorient (NextTo v) = NextTo { orientation: swapOrientation v.orientation
                              , vs: map reorient v.vs
@@ -46,6 +52,9 @@ reorient (Above v) = Above { orientation: swapOrientation v.orientation
 reorient (MkCartesian v) = MkCartesian (reorient v)
 reorient (MkPolar v) = MkPolar (reorient v)
 reorient (Overlay v) = Overlay (v { vs = map reorient v.vs })
+
+swapWH :: VPs -> VPs
+swapWH (VPs vp) = VPs (vp { width = vp.height, height = vp.width })
 
 -- | Change the direction of composition
 flop :: forall a. VVis a -> VVis a
@@ -117,7 +126,8 @@ bottomSpace v n = Above { vs: (cons v (singleton (vspace n)))
 -- Aesthetics and style functions
 
 color :: forall a. VVis a -> NonEmptyList Color -> VVis a
-color (Fill f) cs = Fill (f { color = head cs })
+color (Fill f) cs = let (VPs vps) = f.vps
+                    in Fill (f { vps = (VPs (vps { color = head cs } )) })
 color (V d l r) cs = V d (color l cs) (color r cs)
 color (NextTo v) cs = NextTo (v { vs = zipWith color1 v.vs cs })
 color (Above v) cs = Above (v { vs = zipWith color1 v.vs cs })
@@ -126,7 +136,8 @@ color (MkPolar v) cs = MkPolar (color v cs)
 color (Overlay v) cs = Overlay (v { vs = zipWith color1 v.vs cs })
 
 color1 :: forall a. VVis a -> Color -> VVis a
-color1 (Fill f) c = Fill (f { color = c })
+color1 (Fill f) c = let (VPs vps) = f.vps
+                    in Fill (f { vps = (VPs (vps { color = c } )) })
 color1 (V d l r) c = V d (color1 l c) (color1 r c)
 color1 (NextTo v) c = NextTo (v { vs = map (flip color1 c) v.vs })
 color1 (Above v) c = Above (v { vs = map (flip color1 c) v.vs })
@@ -170,3 +181,29 @@ visDims (Above v) = concatMap visDims (toList v.vs)
 visDims (MkCartesian v) = visDims v
 visDims (MkPolar v) = visDims v
 visDims (Overlay v) = concatMap visDims (toList v.vs)
+
+--------------------------------------------------------------------------------
+-- Queries
+
+isVisible :: forall e. { vps :: VPs | e } -> Boolean
+isVisible r = let (VPs vps) = r.vps
+              in vps.visible
+
+
+getOrientation :: forall e. { vps :: VPs | e } -> Orientation
+getOrientation r = let (VPs vps) = r.vps
+                   in case vps.height of
+                        Nothing -> OrientHorizontal
+                        Just _  -> OrientVertical
+
+getHeight :: forall e. { vps :: VPs | e } -> Number
+getHeight r = let (VPs vps) = r.vps
+              in maybe1 vps.height
+
+getWidth :: forall e. { vps :: VPs | e } -> Number
+getWidth r = let (VPs vps) = r.vps
+             in maybe1 vps.width
+
+getColor :: forall e. { vps :: VPs | e } -> Color
+getColor r = let (VPs vps) = r.vps
+             in vps.color

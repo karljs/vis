@@ -23,19 +23,18 @@ import Control.Monad.Eff (Eff)
 import Data.Foldable (sequence_, sum)
 import Data.Int (toNumber)
 import Data.List (List(..), filter, zipWith, (:))
-import Data.List.NonEmpty (length, reverse, toList)
+import Data.List.NonEmpty (reverse, toList)
 import Data.Map (lookup, singleton)
 import Data.Maybe (Maybe(..))
 import Data.Ord (abs)
 import Data.Tuple (Tuple(..))
 import Graphics.Canvas (Context2D)
 import Math (pi)
-import Prelude (Unit, discard, flip, map, min, not, pure, unit, ($), (*), (+), (-), (/))
+import Prelude (Unit, discard, flip, map, min, pure, unit, ($), (*), (+), (-), (/))
 import UI (DecisionColors)
-import Util (convertRange)
 import V (Decision, Dir(..), Dim, lookupDim, notInDec)
-import Vis (Orientation(..), VVis(..), removeCoord, selectVis, visDims)
-import Vis.Types (Orientation(..), VVis(..))
+import Vis (getColor, getHeight, getOrientation, getWidth, isVisible, removeCoord, selectVis, visDims)
+import Vis.Types (Orientation(..), VPs(..), VVis(..))
 
 -- The main entry point for parsing apart a visualization and rendering it.
 -- Before we can actually get to the work of doing this, we need to check
@@ -120,15 +119,15 @@ parseVis ctx dec cs (MkPolar v) s =
   parseVis ctx dec cs (removeCoord v) (toPolar s)
 
 parseVis ctx dec cs (Fill f) (Cartesian r) =
-  if not f.space
-  then case f.orientation of
-         OrientVertical -> drawBarV ctx f.val r f.frame f.label f.color
-         OrientHorizontal -> drawBarH ctx f.val r f.frame f.label f.color
+  if isVisible f
+  then case getOrientation f of
+         OrientVertical -> drawBarV ctx (getHeight f) r f.frame f.label (getColor f)
+         OrientHorizontal -> drawBarH ctx (getWidth f) r f.frame f.label (getColor f)
   else pure unit
 parseVis ctx dec cs (Fill f) (Polar w) =
-  case f.orientation of
-    OrientVertical -> drawWedgeV ctx f.val w f.frame f.label f.color
-    OrientHorizontal -> drawWedgeH ctx f.val w f.frame f.label f.color
+  case getOrientation f of
+    OrientVertical -> drawWedgeV ctx (getHeight f) w f.frame f.label (getColor f)
+    OrientHorizontal -> drawWedgeH ctx (getWidth f) w f.frame f.label (getColor f)
 
 -- | Draw some visual indicator that part of a chart contains variability.
 drawVHint :: forall m. Context2D -> Color -> Space -> Eff (CEffects m) Unit
@@ -138,9 +137,11 @@ drawVHint ctx col (Polar w) = drawHintWedge ctx col w
 -- | Determine the relative width a visualization component needs, which is
 -- | useful when we are dividing up the space for rendering.
 relativeWidth :: Decision -> VVis Number -> Number
-relativeWidth _ (Fill f) = case f.orientation of
-  OrientVertical -> 1.0
-  OrientHorizontal -> abs f.val
+relativeWidth _ (Fill f) =
+  let (VPs vps) = f.vps
+  in case vps.width of
+       Nothing -> 1.0
+       Just w  -> abs w
 relativeWidth dec (V d l r) =
   case lookupDim d dec of
     Just L -> relativeWidth dec l
@@ -149,9 +150,11 @@ relativeWidth dec (V d l r) =
 relativeWidth _ _ = 1.0
 
 relativeHeight :: Decision -> VVis Number -> Number
-relativeHeight _ (Fill f) = case f.orientation of
-  OrientVertical -> abs f.val
-  OrientHorizontal -> 1.0
+relativeHeight _ (Fill f) =
+  let (VPs vps) = f.vps
+  in case vps.height of
+       Nothing -> 1.0
+       Just w  -> abs w
 relativeHeight dec (V d l r) =
   case lookupDim d dec of
     Just L -> relativeHeight dec l
