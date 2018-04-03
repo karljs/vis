@@ -15,8 +15,8 @@ module Canvas.Drawing
   , toWedge
   ) where
 
-import Canvas.Drawing.Polar (drawHintWedge, drawWedgeH, drawWedgeV)
-import Canvas.Drawing.Rectangular (drawBarH, drawBarV, drawHintRect, drawSMRect)
+import Canvas.Drawing.Polar (drawHintWedge, drawWedge)
+import Canvas.Drawing.Rectangular (drawBar, drawHintRect, drawSMRect)
 import Canvas.Types (CEffects, Rectangle(..), Space(..), Wedge(..))
 import Color (Color, black)
 import Control.Monad.Eff (Eff)
@@ -33,8 +33,8 @@ import Math (pi)
 import Prelude (Unit, discard, flip, map, min, pure, unit, ($), (*), (+), (-), (/))
 import UI (DecisionColors)
 import V (Decision, Dir(..), Dim, lookupDim, notInDec)
-import Vis (getColor, getHeight, getOrientation, getWidth, isVisible, removeCoord, selectVis, visDims)
-import Vis.Types (Orientation(..), VPs(..), VVis(..))
+import Vis (getColor, getHeight, getWidth, isVisible, removeCoord, selectVis, visDims)
+import Vis.Types (VPs(..), VVis(..))
 
 -- The main entry point for parsing apart a visualization and rendering it.
 -- Before we can actually get to the work of doing this, we need to check
@@ -120,14 +120,12 @@ parseVis ctx dec cs (MkPolar v) s =
 
 parseVis ctx dec cs (Fill f) (Cartesian r) =
   if isVisible f
-  then case getOrientation f of
-         OrientVertical -> drawBarV ctx (getHeight f) r f.frame f.label (getColor f)
-         OrientHorizontal -> drawBarH ctx (getWidth f) r f.frame f.label (getColor f)
+  then drawBar ctx (getWidth f.vps) (getHeight f.vps) r f.frameW f.frameH f.label (getColor f)
   else pure unit
 parseVis ctx dec cs (Fill f) (Polar w) =
-  case getOrientation f of
-    OrientVertical -> drawWedgeV ctx (getHeight f) w f.frame f.label (getColor f)
-    OrientHorizontal -> drawWedgeH ctx (getWidth f) w f.frame f.label (getColor f)
+  if isVisible f
+  then drawWedge ctx (getWidth f.vps) (getHeight f.vps) w f.frameW f.frameH f.label (getColor f)
+  else pure unit
 
 -- | Draw some visual indicator that part of a chart contains variability.
 drawVHint :: forall m. Context2D -> Color -> Space -> Eff (CEffects m) Unit

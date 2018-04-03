@@ -10,6 +10,9 @@ module Util
   , prependToAll
 
   , doUnsafeListOp
+  , unsafeNonEmpty
+
+  , guessOrientation
   ) where
 
 import Data.List.NonEmpty (concatMap, fromList, toUnfoldable)
@@ -18,7 +21,7 @@ import Data.Maybe (fromJust)
 import Data.NonEmpty (foldl1)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
-import Prelude (class Ord, max, min, ($), (*), (+), (-), (/))
+import Prelude (class Ord, max, min, otherwise, ($), (*), (+), (-), (/), (==))
 import V (plainVals)
 import V.Types (V)
 
@@ -60,3 +63,10 @@ doUnsafeListOp :: forall a.
 doUnsafeListOp f ne =
   let l = f (toUnfoldable ne)
   in unsafePartial (fromJust $ fromList l)
+
+unsafeNonEmpty :: forall a. List a -> NonEmptyList a
+unsafeNonEmpty l = unsafePartial $ fromJust $ fromList l
+
+guessOrientation :: Number -> Number -> Number
+guessOrientation w h | w == 1.0  = h
+                     | otherwise = w

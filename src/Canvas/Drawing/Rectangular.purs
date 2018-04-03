@@ -1,6 +1,5 @@
 module Canvas.Drawing.Rectangular
-  ( drawBarH
-  , drawBarV
+  ( drawBar
   , drawHintRect
   , drawSMRect
   )where
@@ -11,69 +10,44 @@ import Control.Monad.Eff (Eff)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Graphics.Canvas (Context2D, TextAlign(..), fillRect, fillText, setFillStyle, setFont, setLineDash, setLineWidth, setStrokeStyle, setTextAlign, strokeRect, strokeText)
-import Prelude (Unit, discard, pure, show, unit, (+), (-), (/), (<>), (>=))
+import Prelude (Unit, discard, pure, show, unit, (&&), (+), (-), (/), (<), (<>), (>=))
 import Util (convertRange)
 import Vis.Types (Frame(..), Label(..))
 
--- | Draw a vertically oriented rectangular bar.
-drawBarV :: forall m r.
+drawBar :: forall m.
   Context2D ->
   Number ->
+  Number ->
   Rectangle ->
+  Frame Number ->
   Frame Number ->
   Maybe Label ->
   Color ->
   Eff (CEffects m) Unit
-drawBarV ctx v' (Rectangle r) (Frame f) ml col = do
-  let v = convertRange v' (Tuple f.frameMin f.frameMax) (Tuple (r.y + r.h) r.y)
-      z = convertRange 0.0 (Tuple f.frameMin f.frameMax) (Tuple (r.y + r.h) r.y)
+drawBar ctx w h (Rectangle r) (Frame fw) (Frame fh) ml col = do
+  let vh = convertRange h   (Tuple fh.frameMin fh.frameMax)
+                            (Tuple (r.y + r.h) r.y)
+      zh = convertRange 0.0 (Tuple fh.frameMin fh.frameMax)
+                            (Tuple (r.y + r.h) r.y)
+      vw = convertRange w   (Tuple fw.frameMin fw.frameMax)
+                            (Tuple r.x (r.x + r.w))
+      zw = convertRange 0.0 (Tuple fw.frameMin fw.frameMax)
+                            (Tuple r.x (r.x + r.w))
   setFillStyle ctx (cssStringRGBA col)
   setStrokeStyle ctx "#ffffff"
   setLineDash ctx []
   setLineWidth ctx 1.0
-  if v' >= 0.0
-    then do let rect = { x: r.x, y: v, w: r.w, h: z - v }
-            fillRect ctx rect
-            strokeRect ctx rect
-            case ml of
-              Just l -> drawLabelVP ctx l (Rectangle rect)
-              Nothing -> pure unit
-    else do let rect = { x: r.x , y: z , w: r.w , h: v - z }
-            fillRect ctx rect
-            strokeRect ctx rect
-            case ml of
-              Just l -> drawLabelVN ctx l (Rectangle rect)
-              Nothing -> pure unit
+  let rect = if h >= 0.0 && w >= 0.0
+             then { x: zw, y: vh, w: vw - zw, h: zh - vh }
+             else if h < 0.0
+                  then { x: zw , y: zh , w: vw - zw , h: vh - zh }
+                  else { x: vw , y: vh , w: zw - vw , h: zh - vh }
+  fillRect ctx rect
+  strokeRect ctx rect
+  case ml of
+          Just l -> drawLabel ctx l (Rectangle rect)
+          Nothing -> pure unit
 
--- | Draw a horizontally oriented rectangular bar.
-drawBarH :: forall m r.
-  Context2D ->
-  Number ->
-  Rectangle ->
-  Frame Number ->
-  Maybe Label ->
-  Color ->
-  Eff (CEffects m) Unit
-drawBarH ctx v' (Rectangle r) (Frame f) ml col = do
-  let v = convertRange v' (Tuple f.frameMin f.frameMax) (Tuple r.x (r.x + r.w))
-      z = convertRange 0.0 (Tuple f.frameMin f.frameMax) (Tuple r.x (r.x + r.w))
-  setFillStyle ctx (cssStringRGBA col)
-  setLineDash ctx []
-  setStrokeStyle ctx "#ffffff"
-  setLineWidth ctx 1.0
-  if v' >= 0.0
-    then do let rect = { x: z, y: r.y, w: v - z, h: r.h }
-            fillRect ctx rect
-            strokeRect ctx rect
-            case ml of
-              Just l -> drawLabelHP ctx l (Rectangle rect)
-              Nothing -> pure unit
-    else do let rect = { x: v, y: r.y, w: z - v, h: r.h }
-            fillRect ctx rect
-            strokeRect ctx rect
-            case ml of
-              Just l -> drawLabelHN ctx l (Rectangle rect)
-              Nothing -> pure unit
 
 -- | Draw an outline for the area dedicated to a small multiple, to help set it
 -- | apart.
@@ -87,6 +61,16 @@ drawSMRect ctx (Rectangle r) = do
 
 --------------------------------------------------------------------------------
 -- Functions for drawing labels
+
+-- | Draw a centered label, because dealing with the positioning after removing
+-- | explicit orientation is out of scope for now.
+drawLabel :: forall m.
+  Context2D -> Label -> Rectangle -> Eff (CEffects m) Unit
+drawLabel ctx l (Rectangle r) = do
+  setTextAlign ctx AlignCenter
+  let tx = r.x + (r.w / 2.0)
+      ty = r.y + (r.h / 2.0)
+  drawLabelCommon ctx tx ty l
 
 -- | Draw the label for a vertically oriented, positive valued bar.
 drawLabelVP :: forall m.

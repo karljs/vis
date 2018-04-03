@@ -22,7 +22,6 @@ module Vis
   , isVisible
   , getColor
   , getHeight
-  , getOrientation
   , getWidth
   ) where
 
@@ -34,21 +33,17 @@ import Data.Maybe (Maybe(..), maybe)
 import Prelude (flip, map, (<<<), (<>))
 import Util (doUnsafeListOp, intersperse)
 import V (Decision, Dim, Dir(..), lookupDim)
-import Vis.Types (Frame(..), Orientation(..), VPs(..), VVis(..), hspace, maybe1, vspace)
+import Vis.Types (Frame(..), VPs(..), VVis(..), hspace, maybe1, vspace)
 
 --------------------------------------------------------------------------------
 -- Transformations
 
 -- | Change the orientation between vertical and horizontal, or angle and radius
 reorient :: forall a. VVis a -> VVis a
-reorient (Fill f) = Fill (f { vps = swapWH f.vps })
+reorient (Fill f) = Fill (f { vps = swapWH f.vps, frameW = f.frameH, frameH = f.frameW })
 reorient (V d l r) = V d (reorient l) (reorient r)
-reorient (NextTo v) = NextTo { orientation: swapOrientation v.orientation
-                             , vs: map reorient v.vs
-                             }
-reorient (Above v) = Above { orientation: swapOrientation v.orientation
-                           , vs: map reorient v.vs
-                           }
+reorient (NextTo v) = NextTo (v { vs = map reorient v.vs })
+reorient (Above v) = Above (v { vs = map reorient v.vs })
 reorient (MkCartesian v) = MkCartesian (reorient v)
 reorient (MkPolar v) = MkPolar (reorient v)
 reorient (Overlay v) = Overlay (v { vs = map reorient v.vs })
@@ -69,11 +64,6 @@ flop (Overlay v) = Overlay (v { vs = map flop v.vs })
 -- | Flop, then reorient
 rotate :: forall a. VVis a -> VVis a
 rotate = reorient <<< flop
-
--- | Swap between vertical and horizontal orientation
-swapOrientation :: Orientation -> Orientation
-swapOrientation OrientVertical = OrientHorizontal
-swapOrientation OrientHorizontal = OrientVertical
 
 -- | Iterate over a visualization and remove all the constructors that change
 -- | the coordinate system.
@@ -103,22 +93,18 @@ space (Fill v) _ = Fill v
 
 leftSpace :: VVis Number -> Number -> VVis Number
 leftSpace v n = NextTo { vs: (cons (hspace n) (singleton v))
-                       , orientation: OrientVertical
                        }
 
 rightSpace :: VVis Number -> Number -> VVis Number
 rightSpace v n = NextTo { vs: (cons v (singleton (hspace n)))
-                        , orientation: OrientVertical
                         }
 
 topSpace :: VVis Number -> Number -> VVis Number
 topSpace v n = Above { vs: (cons (vspace n) (singleton v))
-                     , orientation: OrientVertical
                      }
 
 bottomSpace :: VVis Number -> Number -> VVis Number
 bottomSpace v n = Above { vs: (cons v (singleton (vspace n)))
-                        , orientation: OrientVertical
                         }
 
 
@@ -189,20 +175,11 @@ isVisible :: forall e. { vps :: VPs | e } -> Boolean
 isVisible r = let (VPs vps) = r.vps
               in vps.visible
 
+getHeight :: VPs -> Number
+getHeight (VPs vps) = maybe1 vps.height
 
-getOrientation :: forall e. { vps :: VPs | e } -> Orientation
-getOrientation r = let (VPs vps) = r.vps
-                   in case vps.height of
-                        Nothing -> OrientHorizontal
-                        Just _  -> OrientVertical
-
-getHeight :: forall e. { vps :: VPs | e } -> Number
-getHeight r = let (VPs vps) = r.vps
-              in maybe1 vps.height
-
-getWidth :: forall e. { vps :: VPs | e } -> Number
-getWidth r = let (VPs vps) = r.vps
-             in maybe1 vps.width
+getWidth :: VPs -> Number
+getWidth (VPs vps) = maybe1 vps.width
 
 getColor :: forall e. { vps :: VPs | e } -> Color
 getColor r = let (VPs vps) = r.vps
