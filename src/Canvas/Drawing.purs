@@ -23,7 +23,7 @@ import Control.Monad.Eff (Eff)
 import Data.Foldable (sequence_, sum)
 import Data.Int (toNumber)
 import Data.List (List(..), filter, zipWith, (:))
-import Data.List.NonEmpty (reverse, toList)
+import Data.List.NonEmpty (length, reverse, toList)
 import Data.Map (lookup, singleton)
 import Data.Maybe (Maybe(..))
 import Data.Ord (abs)
@@ -96,7 +96,7 @@ parseVis ctx dec cs (Above v) (Cartesian r) = do
   let bs = splitBoxV r (toList $ map (relativeHeight dec) v.vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) bs
 parseVis ctx dec cs (Above v) (Polar w) = do
-  let ws = splitWedgeVOdd w (toList $ map (relativeHeight dec) v.vs)
+  let ws = splitWedgeVEven w (length v.vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) ws
 
 parseVis ctx dec cs (Overlay v) sp = do
@@ -212,7 +212,11 @@ splitWedgeHOdd w ls = split w ls (sum ls)
 
 -- | Divide a wedge into equal sub-spaces by radius
 splitWedgeVEven :: Wedge -> Int -> List Space
-splitWedgeVEven w i = Nil
+splitWedgeVEven _ 0 = Nil
+splitWedgeVEven (Wedge w) i =
+  let newR = ((w.outRad - w.inRad) / toNumber i) + w.inRad
+  in Polar (Wedge (w { outRad = newR })) :
+       splitWedgeVEven (Wedge (w { inRad = newR })) (i - 1)
 
 splitWedgeVOdd :: Wedge -> List Number -> List Space
 splitWedgeVOdd w ls = Nil
