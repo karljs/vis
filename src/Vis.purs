@@ -26,7 +26,7 @@ module Vis
   ) where
 
 import Color (Color)
-import Data.List (List(..), concatMap, (:))
+import Data.List (List(..), concatMap, nub, (:))
 import Data.List.NonEmpty (NonEmptyList, cons, head, singleton, toList, zipWith)
 import Data.Map (empty)
 import Data.Maybe (Maybe(..), maybe)
@@ -160,13 +160,14 @@ visInitDec v = empty
 
 -- | Extract all the dimensions from a visualization
 visDims :: forall a. VVis a -> List Dim
-visDims (Fill _) = Nil
-visDims (V d l r) = d : visDims l <> visDims r
-visDims (NextTo v) = concatMap visDims (toList v.vs)
-visDims (Above v) = concatMap visDims (toList v.vs)
-visDims (MkCartesian v) = visDims v
-visDims (MkPolar v) = visDims v
-visDims (Overlay v) = concatMap visDims (toList v.vs)
+visDims = nub <<< visDimsHelp where
+  visDimsHelp (Fill _) = Nil
+  visDimsHelp (V d l r) = d : visDimsHelp l <> visDimsHelp r
+  visDimsHelp (NextTo v) = concatMap visDimsHelp (toList v.vs)
+  visDimsHelp (Above v) = concatMap visDimsHelp (toList v.vs)
+  visDimsHelp (MkCartesian v) = visDimsHelp v
+  visDimsHelp (MkPolar v) = visDimsHelp v
+  visDimsHelp (Overlay v) = concatMap visDimsHelp (toList v.vs)
 
 --------------------------------------------------------------------------------
 -- Queries
