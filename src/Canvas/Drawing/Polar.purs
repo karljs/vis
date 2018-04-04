@@ -29,8 +29,6 @@ drawWedge ctx w h (Wedge wedg') (Frame fw) (Frame fh) ml col = do
                             (Tuple wedg'.inRad wedg'.outRad)
       zh = convertRange 0.0 (Tuple fh.frameMin fh.frameMax)
                             (Tuple wedg'.inRad wedg'.outRad)
-      -- vw = convertRange w   (Tuple fw.frameMin fw.frameMax)
-      --                       (Tuple w.startAngle w.endAngle)
   setFillStyle ctx (cssStringRGBA col)
   setStrokeStyle ctx "#ffffff"
   setLineDash ctx []
@@ -49,59 +47,6 @@ drawWedge ctx w h (Wedge wedg') (Frame fw) (Frame fh) ml col = do
   fillWedge ctx wedg
   strokeWedge ctx wedg
   maybe (pure unit) (\l -> drawLabelVP ctx l wedg) ml
-
-
--- drawWedgeH :: forall m.
---   Context2D ->
---   Number ->
---   Wedge ->
---   Frame Number ->
---   Maybe Label ->
---   Color ->
---   Eff (CEffects m) Unit
--- drawWedgeH ctx v (Wedge w) (Frame f) ml col = do
---   setFillStyle ctx (cssStringRGBA col)
---   setStrokeStyle ctx "#ffffff"
---   setLineDash ctx []
---   setLineWidth ctx 1.0
---   fillWedge ctx (Wedge w)
---   strokeWedge ctx (Wedge w)
---   if v >= 0.0
---     then maybe (pure unit) (\l -> drawLabelHP ctx l (Wedge w)) ml
---     else maybe (pure unit) (\l -> drawLabelHN ctx l (Wedge w)) ml
-
--- drawWedgeV :: forall m.
---   Context2D ->
---   Number ->
---   Wedge ->
---   Frame Number ->
---   Maybe Label ->
---   Color ->
---   Eff (CEffects m) Unit
--- drawWedgeV ctx v' (Wedge w) (Frame f) ml col = do
---   let v = convertRange v'  (Tuple f.frameMin f.frameMax)
---                            (Tuple w.inRad w.outRad)
---       z = convertRange 0.0 (Tuple f.frameMin f.frameMax)
---                            (Tuple w.inRad w.outRad)
---   setFillStyle ctx (cssStringRGBA col)
---   setStrokeStyle ctx "#ffffff"
---   setLineDash ctx []
---   setLineWidth ctx 1.0
---   if v' >= 0.0
---     then do let wedg = Wedge { x: w.x, y: w.y
---                              , inRad: z , outRad: v
---                              , startAngle: w.startAngle , endAngle: w.endAngle
---                              }
---             fillWedge ctx wedg
---             strokeWedge ctx wedg
---             maybe (pure unit) (\l -> drawLabelVP ctx l wedg) ml
---     else do let wedg = Wedge { x: w.x, y: w.y
---                              , inRad: v , outRad: z
---                              , startAngle: w.startAngle , endAngle: w.endAngle
---                              }
---             fillWedge ctx wedg
---             strokeWedge ctx wedg
---             maybe (pure unit) (\l -> drawLabelVP ctx l wedg) ml
 
 drawHintWedge :: forall m. Context2D -> Color -> Wedge -> Eff (CEffects m) Unit
 drawHintWedge ctx col w = do
