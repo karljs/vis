@@ -23,6 +23,7 @@ module Main
   , hyb1
   , hyb2
   , hyb3
+  , stk
   ) where
 
 import Color.Scheme.MaterialDesign
@@ -43,7 +44,7 @@ import Halogen.VDom.Driver (runUI)
 import Math (ln2, log, sqrt)
 import Prelude (Unit, bind, map, negate, ($), (/))
 import V (V(..))
-import Vis.Types (Frame(..), VVis(..), above, fillsH, fillsW, nextTo, overlay, overlayFlat)
+import Vis.Types (Frame(..), VVis(..), above, fillsH, fillsW, nextTo, overlay, overlayFlat, stacks)
 import VisColor (defaultColors)
 
 main :: Eff (HA.HalogenEffects (canvas :: CANVAS, console :: CONSOLE)) Unit
@@ -194,3 +195,8 @@ hyb2 = above [ nextTo [plain2, vlp2] `space` 0.2
 
 hyb3 :: VVis Number
 hyb3 = V "TxType" (overlayFlat (plain1 `color1` tgreen) (plain1log)) (overlayFlat (plain1 `color1` tgreen) (plain1sqrt))
+
+
+
+stk :: VVis Number
+stk = NextTo { vs: stacks [1.0,2.0,3.0] [2.0,3.0,4.0]}

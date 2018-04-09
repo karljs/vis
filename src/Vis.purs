@@ -23,14 +23,16 @@ module Vis
   , getColor
   , getHeight
   , getWidth
+  , splitPosNeg
   ) where
 
 import Color (Color)
-import Data.List (List(..), concatMap, nub, (:))
+import Data.List (List(..), concatMap, filter, nub, partition, (:))
 import Data.List.NonEmpty (NonEmptyList, cons, head, singleton, toList, zipWith)
 import Data.Map (empty)
 import Data.Maybe (Maybe(..), maybe)
-import Prelude (flip, map, (<<<), (<>))
+import Data.Tuple (Tuple(..))
+import Prelude (flip, map, (<), (<<<), (<>), (||))
 import Util (doUnsafeListOp, intersperse)
 import V (Decision, Dim, Dir(..), lookupDim)
 import Vis.Types (Frame(..), VPs(..), VVis(..), hspace, maybe1, vspace)
@@ -47,6 +49,7 @@ reorient (Above v) = Above (v { vs = map reorient v.vs })
 reorient (MkCartesian v) = MkCartesian (reorient v)
 reorient (MkPolar v) = MkPolar (reorient v)
 reorient (Overlay v) = Overlay (v { vs = map reorient v.vs })
+reorient (Stacked v) = Stacked (v { vs = map reorient v.vs })
 
 swapWH :: VPs -> VPs
 swapWH (VPs vp) = VPs (vp { width = vp.height, height = vp.width })
@@ -60,6 +63,7 @@ flop (Above v) = NextTo (v { vs = map flop v.vs })
 flop (MkCartesian v) = MkCartesian (flop v)
 flop (MkPolar v) = MkPolar (flop v)
 flop (Overlay v) = Overlay (v { vs = map flop v.vs })
+flop (Stacked v) = Stacked (v { vs = map flop v.vs })
 
 -- | Flop, then reorient
 rotate :: forall a. VVis a -> VVis a
@@ -75,6 +79,7 @@ removeCoord (Above v) = Above (v { vs = map removeCoord v.vs })
 removeCoord (MkCartesian v) = removeCoord v
 removeCoord (MkPolar v) = removeCoord v
 removeCoord (Overlay v) = Overlay (v { vs = map removeCoord v.vs })
+removeCoord (Stacked v) = Stacked (v { vs = map removeCoord v.vs })
 
 space :: VVis Number -> Number -> VVis Number
 space (NextTo v) n =
@@ -89,6 +94,7 @@ space (MkPolar v) n = MkPolar (space v n)
 space (Overlay v) n =
   let newvs = doUnsafeListOp (intersperse (vspace n)) v.vs
   in Overlay (v { vs = newvs })
+space (Stacked v) _ = Stacked v
 space (Fill v) _ = Fill v
 
 leftSpace :: VVis Number -> Number -> VVis Number
@@ -120,6 +126,7 @@ color (Above v) cs = Above (v { vs = zipWith color1 v.vs cs })
 color (MkCartesian v) cs = MkCartesian (color v cs)
 color (MkPolar v) cs = MkPolar (color v cs)
 color (Overlay v) cs = Overlay (v { vs = zipWith color1 v.vs cs })
+color (Stacked v) cs = Stacked (v { vs = zipWith color1 v.vs cs })
 
 color1 :: forall a. VVis a -> Color -> VVis a
 color1 (Fill f) c = let (VPs vps) = f.vps
@@ -130,6 +137,7 @@ color1 (Above v) c = Above (v { vs = map (flip color1 c) v.vs })
 color1 (MkCartesian v) c = MkCartesian (color1 v c)
 color1 (MkPolar v) c = MkPolar (color1 v c)
 color1 (Overlay v) c = Overlay (v { vs = map (flip color1 c) v.vs })
+color1 (Stacked v) c = Stacked (v { vs = map (flip color1 c) v.vs })
 
 --------------------------------------------------------------------------------
 -- Things related to variability
@@ -151,6 +159,7 @@ selectVis dec (Above v) = Above (v { vs = map (selectVis dec) v.vs })
 selectVis dec (MkCartesian v) = MkCartesian (selectVis dec v)
 selectVis dec (MkPolar v) = MkPolar (selectVis dec v)
 selectVis dec (Overlay v) = Overlay (v { vs = map (selectVis dec) v.vs })
+selectVis dec (Stacked v) = Stacked (v { vs = map (selectVis dec) v.vs })
 
 -- | Generate an initial (view) decision for a particular visualization.
 -- | Generally this will be all left selections.
@@ -168,6 +177,7 @@ visDims = nub <<< visDimsHelp where
   visDimsHelp (MkCartesian v) = visDimsHelp v
   visDimsHelp (MkPolar v) = visDimsHelp v
   visDimsHelp (Overlay v) = concatMap visDimsHelp (toList v.vs)
+  visDimsHelp (Stacked v) = concatMap visDimsHelp (toList v.vs)
 
 --------------------------------------------------------------------------------
 -- Queries
@@ -185,3 +195,21 @@ getWidth (VPs vps) = maybe1 vps.width
 getColor :: forall e. { vps :: VPs | e } -> Color
 getColor r = let (VPs vps) = r.vps
              in vps.color
+
+splitPosNeg ::
+  List (VVis Number) ->
+  Tuple (List (VVis Number)) (List (VVis Number))
+splitPosNeg vs =
+  let p = partition anyNegative vs
+  in Tuple (filter isFill p.no) (p.yes)
+
+anyNegative :: VVis Number -> Boolean
+anyNegative (Fill f) =
+  let (VPs vps) = f.vps
+  in (maybe false (\h -> h < 0.0) vps.height) ||
+     (maybe false (\w -> w < 0.0) vps.width)
+anyNegative _ = false
+
+isFill :: forall a. VVis a -> Boolean
+isFill (Fill _) = true
+isFill _ = false

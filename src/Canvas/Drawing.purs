@@ -15,8 +15,8 @@ module Canvas.Drawing
   , toWedge
   ) where
 
-import Canvas.Drawing.Polar (drawHintWedge, drawWedge)
-import Canvas.Drawing.Rectangular (drawBar, drawHintRect, drawSMRect)
+import Canvas.Drawing.Polar (drawHintWedge, drawStackedWedges, drawWedge)
+import Canvas.Drawing.Rectangular (drawBar, drawHintRect, drawSMRect, drawStackedBars)
 import Canvas.Types (CEffects, Rectangle(..), Space(..), Wedge(..))
 import Color (Color, black)
 import Control.Monad.Eff (Eff)
@@ -101,6 +101,11 @@ parseVis ctx dec cs (Above v) (Polar w) = do
 
 parseVis ctx dec cs (Overlay v) sp = do
   sequence_ $ map (\vis -> parseVis ctx dec cs vis sp) (reverse v.vs)
+
+parseVis ctx dec cs (Stacked v) (Cartesian r) = do
+  drawStackedBars ctx (toList v.vs) r
+parseVis ctx dec cs (Stacked v) (Polar w) = do
+  drawStackedWedges ctx (toList v.vs) w
 
 parseVis ctx dec cs (V d l r) sp = do
   case lookupDim d dec of

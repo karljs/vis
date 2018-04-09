@@ -13,6 +13,7 @@ module Vis.Types
   , nextTo
   , overlay
   , overlayFlat
+  , stacks
 
   , hspace
   , vspace
@@ -22,10 +23,9 @@ module Vis.Types
 
 import Color (Color, white)
 import Color.Scheme.MaterialDesign (green)
-import Data.Array (length, toUnfoldable)
-import Data.Int (toNumber)
+import Data.Array (toUnfoldable)
 import Data.List (List)
-import Data.List.NonEmpty (NonEmptyList, cons, foldr, fromList, singleton)
+import Data.List.NonEmpty (NonEmptyList, cons, foldr, fromList, singleton, zipWith)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Show (class Show, show)
 import Data.String (take)
@@ -49,6 +49,7 @@ data VVis a
   | MkCartesian (VVis a)
   | MkPolar (VVis a)
   | Overlay { vs :: (NonEmptyList (VVis a)) }
+  | Stacked { vs :: (NonEmptyList (VVis a)) }
 
 instance showVVis :: Show a => Show (VVis a) where
   show (Fill f) = "Fill " <> show f.vps <> " "
@@ -64,6 +65,8 @@ instance showVVis :: Show a => Show (VVis a) where
   show (MkPolar v) = "Polar\n" <> show v
   show (Overlay o) =
     "Overlay\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show o.vs))
+  show (Stacked s) =
+    "Stacked\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show s.vs))
 
 data VPs = VPs
   { height :: Maybe Number
@@ -238,6 +241,13 @@ setFrames fh fw (Above v) = Above (v { vs = map (setFrames fh fw) v.vs })
 setFrames fh fw (MkCartesian v) = MkCartesian (setFrames fh fw v)
 setFrames fh fw (MkPolar v) = MkPolar (setFrames fh fw v)
 setFrames fh fw (Overlay v) = Overlay (v { vs = map (setFrames fh fw) v.vs })
+setFrames fh fw (Stacked v) = Stacked (v { vs = map (setFrames fh fw) v.vs })
+
+stacks :: Array Number -> Array Number -> NonEmptyList (VVis Number)
+stacks xs ys = zipWith stack2 (fillsH (map One xs)) (fillsH (map One ys))
+
+stack2 :: forall a. VVis a -> VVis a -> VVis a
+stack2 x y = Stacked { vs: cons x (singleton y) }
 
 --------------------------------------------------------------------------------
 -- Queries
@@ -250,6 +260,7 @@ maxValH (Above v) = maximum $ map maxValH v.vs
 maxValH (MkCartesian v) = maxValH v
 maxValH (MkPolar v) = maxValH v
 maxValH (Overlay v) = maximum $ map maxValH v.vs
+maxValH (Stacked v) = maximum $ map minValH v.vs
 
 maxValW :: VVis Number -> Number
 maxValW (Fill f) = let (Frame fr) = f.frameW in fr.frameMax
@@ -259,24 +270,27 @@ maxValW (Above v) = maximum $ map maxValW v.vs
 maxValW (MkCartesian v) = maxValW v
 maxValW (MkPolar v) = maxValW v
 maxValW (Overlay v) = maximum $ map maxValW v.vs
+maxValW (Stacked v) = maximum $ map minValH v.vs
 
 minValH :: VVis Number -> Number
-minValH (Fill f) = let (Frame fr) = f.frameH in fr.frameMax
+minValH (Fill f) = let (Frame fr) = f.frameH in fr.frameMin
 minValH (V d l r) = max (minValH l) (minValH r)
-minValH (NextTo v) = maximum $ map minValH v.vs
-minValH (Above v) = maximum $ map minValH v.vs
+minValH (NextTo v) = minimum $ map minValH v.vs
+minValH (Above v) = minimum $ map minValH v.vs
 minValH (MkCartesian v) = minValH v
 minValH (MkPolar v) = minValH v
-minValH (Overlay v) = maximum $ map minValH v.vs
+minValH (Overlay v) = minimum $ map minValH v.vs
+minValH (Stacked v) = minimum $ map minValH v.vs
 
 minValW :: VVis Number -> Number
-minValW (Fill f) = let (Frame fr) = f.frameW in fr.frameMax
+minValW (Fill f) = let (Frame fr) = f.frameW in fr.frameMin
 minValW (V d l r) = max (minValW l) (minValW r)
-minValW (NextTo v) = maximum $ map minValW v.vs
-minValW (Above v) = maximum $ map minValW v.vs
+minValW (NextTo v) = minimum $ map minValW v.vs
+minValW (Above v) = minimum $ map minValW v.vs
 minValW (MkCartesian v) = minValW v
 minValW (MkPolar v) = minValW v
-minValW (Overlay v) = maximum $ map minValW v.vs
+minValW (Overlay v) = minimum $ map minValW v.vs
+minValW (Stacked v) = minimum $ map minValW v.vs
 
 maybe1 :: Maybe Number -> Number
 maybe1 (Just n) = n

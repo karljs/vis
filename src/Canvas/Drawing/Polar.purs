@@ -1,18 +1,20 @@
 module Canvas.Drawing.Polar
   ( drawHintWedge
+  , drawStackedWedges
   , drawWedge
   ) where
 
 import Canvas.Types (Wedge(..), CEffects)
 import Color (Color, cssStringRGBA)
 import Control.Monad.Eff (Eff)
+import Data.List.Types (List)
 import Data.Maybe (Maybe, maybe)
 import Data.Tuple (Tuple(..))
 import Graphics.Canvas (Context2D, TextAlign(..), arc, beginPath, closePath, fill, fillText, lineTo, moveTo, setFillStyle, setFont, setLineDash, setLineWidth, setStrokeStyle, setTextAlign, stroke, strokeText)
 import Math (cos, sin)
 import Prelude (Unit, discard, pure, show, unit, (*), (+), (/), (<>), (>=))
 import Util (convertRange)
-import Vis.Types (Frame(..), Label(..))
+import Vis.Types (Frame(..), Label(..), VVis)
 
 drawWedge :: forall m.
   Context2D ->
@@ -47,6 +49,13 @@ drawWedge ctx w h (Wedge wedg') (Frame fw) (Frame fh) ml col = do
   fillWedge ctx wedg
   strokeWedge ctx wedg
   maybe (pure unit) (\l -> drawLabelVP ctx l wedg) ml
+
+drawStackedWedges :: forall a m.
+  Context2D ->
+  List (VVis a) ->
+  Wedge ->
+  Eff (CEffects m) Unit
+drawStackedWedges ctx vs (Wedge w) = pure unit
 
 drawHintWedge :: forall m. Context2D -> Color -> Wedge -> Eff (CEffects m) Unit
 drawHintWedge ctx col w = do
