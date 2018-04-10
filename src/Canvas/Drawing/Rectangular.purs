@@ -129,7 +129,7 @@ drawStackedNeg ctx (Fill v : vs) (Rectangle r) zh zw oh ow = do
           Nothing -> pure unit
   case getOrientation v.vps of
     Vertical -> drawStackedNeg ctx vs (Rectangle r) zh zw (oh + (vh - zh)) ow
-    Horizontal -> drawStackedNeg ctx vs (Rectangle r) zh zw oh (ow + (zw - vw))
+    Horizontal -> drawStackedNeg ctx vs (Rectangle r) zh zw oh (ow - (zw - vw))
 drawStackedNeg _ _ _ _ _ _ _ = pure unit
 
 -- | Draw an outline for the area dedicated to a small multiple, to help set it
