@@ -23,6 +23,7 @@ module Vis
   , getColor
   , getHeight
   , getWidth
+  , getOrientation
   , splitPosNeg
   ) where
 
@@ -35,14 +36,17 @@ import Data.Tuple (Tuple(..))
 import Prelude (flip, map, (<), (<<<), (<>), (||))
 import Util (doUnsafeListOp, intersperse)
 import V (Decision, Dim, Dir(..), lookupDim)
-import Vis.Types (Frame(..), VPs(..), VVis(..), hspace, maybe1, vspace)
+import Vis.Types (Frame(..), Orientation(..), VPs(..), VVis(..), hspace, maybe1, vspace)
 
 --------------------------------------------------------------------------------
 -- Transformations
 
 -- | Change the orientation between vertical and horizontal, or angle and radius
 reorient :: forall a. VVis a -> VVis a
-reorient (Fill f) = Fill (f { vps = swapWH f.vps, frameW = f.frameH, frameH = f.frameW })
+reorient (Fill f) = Fill (f { vps = swapWH f.vps
+                            , frameW = f.frameH
+                            , frameH = f.frameW
+                            })
 reorient (V d l r) = V d (reorient l) (reorient r)
 reorient (NextTo v) = NextTo (v { vs = map reorient v.vs })
 reorient (Above v) = Above (v { vs = map reorient v.vs })
@@ -52,7 +56,12 @@ reorient (Overlay v) = Overlay (v { vs = map reorient v.vs })
 reorient (Stacked v) = Stacked (v { vs = map reorient v.vs })
 
 swapWH :: VPs -> VPs
-swapWH (VPs vp) = VPs (vp { width = vp.height, height = vp.width })
+swapWH (VPs vp) =
+  VPs (vp { width = vp.height
+          , height = vp.width
+          , orientation = swapO vp.orientation })
+  where swapO Vertical = Horizontal
+        swapO Horizontal = Vertical
 
 -- | Change the direction of composition
 flop :: forall a. VVis a -> VVis a
@@ -192,9 +201,11 @@ getHeight (VPs vps) = maybe1 vps.height
 getWidth :: VPs -> Number
 getWidth (VPs vps) = maybe1 vps.width
 
-getColor :: forall e. { vps :: VPs | e } -> Color
-getColor r = let (VPs vps) = r.vps
-             in vps.color
+getColor :: VPs -> Color
+getColor (VPs vps) = vps.color
+
+getOrientation :: VPs -> Orientation
+getOrientation (VPs vps) = vps.orientation
 
 splitPosNeg ::
   List (VVis Number) ->

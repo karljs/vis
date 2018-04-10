@@ -8,14 +8,15 @@ module Canvas.Drawing.Rectangular
 import Canvas.Types (CEffects, Rectangle(..))
 import Color (Color, black, cssStringRGBA, white)
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Console (log)
 import Data.List.Types (List, (:))
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Graphics.Canvas (Context2D, TextAlign(..), fillRect, fillText, setFillStyle, setFont, setLineDash, setLineWidth, setStrokeStyle, setTextAlign, strokeRect, strokeText)
-import Prelude (Unit, discard, pure, show, unit, (&&), (+), (-), (/), (<), (<>), (>=))
+import Prelude (Unit, discard, pure, show, unit, ($), (&&), (+), (-), (/), (<), (<>), (>=))
 import Util (convertRange)
-import Vis (VPs(..), VVis(..), maybe1, splitPosNeg)
-import Vis.Types (Frame(..), Label(..), VVis)
+import Vis (Orientation(..), VPs(..), VVis(..), getColor, getHeight, getOrientation, getWidth, maybe1, splitPosNeg)
+import Vis.Types (Frame(..), Label(..), Orientation(..), VVis)
 
 drawBar :: forall m.
   Context2D ->
@@ -64,11 +65,10 @@ drawStackedBars ctx ((Fill v) : vs) (Rectangle r) = do
                             (Tuple (r.y + r.h) r.y)
       zw = convertRange 0.0 (Tuple fw.frameMin fw.frameMax)
                             (Tuple r.x (r.x + r.w))
-  setStrokeStyle ctx "#ffffff"
   setLineDash ctx []
   setLineWidth ctx 1.0
-  drawStackedPos ctx pos (Rectangle r) zh zw
-  drawStackedNeg ctx pos (Rectangle r) zh zw
+  drawStackedPos ctx pos (Rectangle r) zh zw 0.0 0.0
+  drawStackedNeg ctx neg (Rectangle r) zh zw 0.0 0.0
 drawStackedBars _ _ _ = pure unit
 
 drawStackedPos :: forall m.
@@ -76,8 +76,9 @@ drawStackedPos :: forall m.
   List (VVis Number) ->
   Rectangle ->
   Number -> Number ->
+  Number -> Number ->
   Eff (CEffects m) Unit
-drawStackedPos ctx (Fill v : vs) (Rectangle r) zh zw = do
+drawStackedPos ctx (Fill v : vs) (Rectangle r) zh zw oh ow = do
   let (Frame fh) = v.frameH
       (Frame fw) = v.frameW
       (VPs vps) = v.vps
@@ -87,42 +88,49 @@ drawStackedPos ctx (Fill v : vs) (Rectangle r) zh zw = do
                           (Tuple (r.y + r.h) r.y)
       vw = convertRange w (Tuple fw.frameMin fw.frameMax)
                           (Tuple r.x (r.x + r.w))
-      brect = { x: zw, y: vh, w: vw - zw, h: zh - vh }
+      brect = { x: zw + ow, y: vh - oh, w: vw - zw, h: zh - vh }
   setFillStyle ctx (cssStringRGBA (vps.color))
+  setStrokeStyle ctx "#ffffff"
   fillRect ctx brect
   strokeRect ctx brect
   case v.label of
           Just l -> drawLabel ctx l (Rectangle brect)
           Nothing -> pure unit
-  drawStackedPos ctx vs (Rectangle r) (zh + h) (zw + w)
-drawStackedPos _ _ _ _ _ = pure unit
+  case vps.orientation of
+    Vertical   -> drawStackedPos ctx vs (Rectangle r) zh zw (oh + (zh - vh)) ow
+    Horizontal -> drawStackedPos ctx vs (Rectangle r) zh zw oh (ow + (vw - zw))
+drawStackedPos _ _ _ _ _ _ _ = pure unit
 
 drawStackedNeg :: forall m.
   Context2D ->
   List (VVis Number) ->
   Rectangle ->
   Number -> Number ->
+  Number -> Number ->
   Eff (CEffects m) Unit
-drawStackedNeg ctx (Fill v : vs) (Rectangle r) zh zw = do
+drawStackedNeg ctx (Fill v : vs) (Rectangle r) zh zw oh ow = do
   let (Frame fh) = v.frameH
       (Frame fw) = v.frameW
-      (VPs vps) = v.vps
-      h = maybe1 vps.height
-      w = maybe1 vps.width
+      h = getHeight v.vps
+      w = getWidth v.vps
       vh = convertRange h (Tuple fh.frameMin fh.frameMax)
                           (Tuple (r.y + r.h) r.y)
       vw = convertRange w (Tuple fw.frameMin fw.frameMax)
                           (Tuple r.x (r.x + r.w))
-      brect = if h < 0.0 then { x: zw , y: zh , w: vw - zw , h: vh - zh }
-                         else { x: vw , y: vh , w: zw - vw , h: zh - vh }
-  setFillStyle ctx (cssStringRGBA (vps.color))
+      brect = case getOrientation v.vps of
+                Vertical -> { x: zw , y: zh + oh, w: vw - zw , h: vh - zh }
+                Horizontal -> { x: vw + ow, y: vh , w: zw - vw , h: zh - vh }
+  setFillStyle ctx (cssStringRGBA (getColor v.vps))
+  setStrokeStyle ctx "#ffffff"
   fillRect ctx brect
   strokeRect ctx brect
   case v.label of
           Just l -> drawLabel ctx l (Rectangle brect)
           Nothing -> pure unit
-  drawStackedNeg ctx vs (Rectangle r) (zh - h) (zw - w)
-drawStackedNeg _ _ _ _ _ = pure unit
+  case getOrientation v.vps of
+    Vertical -> drawStackedNeg ctx vs (Rectangle r) zh zw (oh + (vh - zh)) ow
+    Horizontal -> drawStackedNeg ctx vs (Rectangle r) zh zw oh (ow + (zw - vw))
+drawStackedNeg _ _ _ _ _ _ _ = pure unit
 
 -- | Draw an outline for the area dedicated to a small multiple, to help set it
 -- | apart.

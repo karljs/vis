@@ -199,4 +199,4 @@ hyb3 = V "TxType" (overlayFlat (plain1 `color1` tgreen) (plain1log)) (overlayFla
 
 
 stk :: VVis Number
-stk = NextTo { vs: stacks [1.0,2.0,3.0] [2.0,3.0,4.0]}
+stk = NextTo { vs: stacks [(-1.0),(-2.0),3.0] [2.0,(-3.0),4.0]}

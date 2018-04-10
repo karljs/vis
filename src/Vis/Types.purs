@@ -3,6 +3,7 @@ module Vis.Types
   , Label(..)
   , LabelPositionH(..)
   , LabelPositionV(..)
+  , Orientation(..)
   , VPs(..)
   , VVis(..)
   , above
@@ -23,7 +24,8 @@ module Vis.Types
 
 import Color (Color, white)
 import Color.Scheme.MaterialDesign (green)
-import Data.Array (toUnfoldable)
+import Data.Array (toUnfoldable, zipWith) as A
+import Data.Foldable (maximum, minimum) as F
 import Data.List (List)
 import Data.List.NonEmpty (NonEmptyList, cons, foldr, fromList, singleton, zipWith)
 import Data.Maybe (Maybe(..), fromJust)
@@ -32,7 +34,7 @@ import Data.String (take)
 import Data.Tuple (Tuple(..))
 import Math (max, min)
 import Partial.Unsafe (unsafePartial)
-import Prelude (map, ($), (<>))
+import Prelude (map, ($), (+), (<>))
 import Util (guessOrientation, maximum, minimum, unsafeNonEmpty, vmaximum, vminimum)
 import V (Dim, V(..))
 
@@ -73,6 +75,7 @@ data VPs = VPs
   , width :: Maybe Number
   , color :: Color
   , visible :: Boolean
+  , orientation :: Orientation
   }
 
 instance showVPs :: Show VPs where
@@ -87,6 +90,8 @@ data Frame a = Frame
 
 instance showFrame :: Show a => Show (Frame a) where
   show (Frame f) = show f.frameMin <> "--" <> show f.frameMax
+
+data Orientation = Vertical | Horizontal
 
 --------------------------------------------------------------------------------
 -- Everything to do with labels
@@ -112,17 +117,17 @@ data LabelPositionH = HPosLeft | HPosMiddle | HPosRight
 -- | bound to the height
 fillsH :: Array (V Number) -> NonEmptyList (VVis Number)
 fillsH hsarr =
-  let hs = toUnfoldable hsarr
+  let hs = A.toUnfoldable hsarr
       fw = Frame { frameMin: 0.0, frameMax: 1.0 }
-  in fills (map (setW 1.0) hs) (genFrame hs) fw
+  in fills (map (setW 1.0) hs) (genFrame hs) fw Vertical
 
 -- | Create fill objects for an array of variational numbers where the data is
 -- | bound to the width
 fillsW :: Array (V Number) -> NonEmptyList (VVis Number)
 fillsW wsarr =
-  let ws = toUnfoldable wsarr
+  let ws = A.toUnfoldable wsarr
       fh = Frame { frameMin: 0.0, frameMax: 1.0 }
-  in fills (map (setH 1.0) ws) fh (genFrame ws)
+  in fills (map (setH 1.0) ws) fh (genFrame ws) Horizontal
 
 setW :: Number -> V Number -> V (Tuple Number Number)
 setW w (Chc d l r) = Chc d (setW w l) (setW w r)
@@ -142,45 +147,48 @@ genFrame vs =
       fmax = max (vmaximum vs') 0.0
   in Frame { frameMax: fmax, frameMin: fmin }
 
--- | For a list of dimensions and a frame, generate a sequence of
 fills ::
   List (V (Tuple Number Number)) ->
   Frame Number ->
   Frame Number ->
+  Orientation ->
   NonEmptyList (VVis Number)
-fills vs fh fw = unsafeNonEmpty $ map (genFill fh fw) vs
+fills vs fh fw o = unsafeNonEmpty $ map (genFill fh fw o) vs
 
 -- | For a variational number, produce a `Fill` visualization.
 genFill ::
   Frame Number ->
   Frame Number ->
+  Orientation ->
   V (Tuple Number Number) ->
   VVis Number
-genFill fh fw (One (Tuple w h)) =
+genFill fh fw o (One (Tuple w h)) =
   let vp = VPs { height: Just h
                , width: Just w
                , color: green
                , visible: true
+               , orientation: o
                }
   in Fill { vps: vp
           , frameH: fh
           , frameW: fw
           , label: Just (defaultLabel (guessOrientation w h))
           }
-genFill fh fw (Chc d l r) = V d (genFill fh fw l) (genFill fh fw r)
+genFill fh fw o (Chc d l r) = V d (genFill fh fw o l) (genFill fh fw o r)
 
 hspace :: Number -> VVis Number
-hspace v = spaceFill (Just v) Nothing
+hspace v = spaceFill (Just v) Nothing Horizontal
 
 vspace :: Number -> VVis Number
-vspace v = spaceFill Nothing (Just v)
+vspace v = spaceFill Nothing (Just v) Vertical
 
-spaceFill :: Maybe Number -> Maybe Number -> VVis Number
-spaceFill w h =
+spaceFill :: Maybe Number -> Maybe Number -> Orientation -> VVis Number
+spaceFill w h o =
   let vp = VPs { height: h
                , width: w
                , color: white
-               , visible: false }
+               , visible: false
+               , orientation: o }
   in Fill { vps: vp
           , frameH: Frame { frameMin: 0.0, frameMax: 1.0 }
           , frameW: Frame { frameMin: 0.0, frameMax: 1.0 }
@@ -199,7 +207,7 @@ nextTo' vs = NextTo { vs: unsafePartial $ fromJust $ fromList vs
                     }
 
 nextTo :: forall a. Array (VVis a) -> VVis a
-nextTo vs = nextTo' $ toUnfoldable vs
+nextTo vs = nextTo' $ A.toUnfoldable vs
 
 -- | An _unsafe_ helper function (when the parameter list is empty) for
 -- | composing with `Above`.
@@ -210,7 +218,7 @@ above' vs = Above { vs: unsafePartial $ fromJust $ fromList vs
 -- | An _unsafe_ helper function (when the parameter array is empty) for
 -- | composing with `Above`.
 above :: forall a. Array (VVis a) -> VVis a
-above vs = above' $ toUnfoldable vs
+above vs = above' $ A.toUnfoldable vs
 
 
 -- | Overlay the first visualization over the second
@@ -244,7 +252,13 @@ setFrames fh fw (Overlay v) = Overlay (v { vs = map (setFrames fh fw) v.vs })
 setFrames fh fw (Stacked v) = Stacked (v { vs = map (setFrames fh fw) v.vs })
 
 stacks :: Array Number -> Array Number -> NonEmptyList (VVis Number)
-stacks xs ys = zipWith stack2 (fillsH (map One xs)) (fillsH (map One ys))
+stacks xs ys =
+  let maxH = unsafePartial $ fromJust $ F.maximum $ A.zipWith (+) xs ys
+      minH = unsafePartial $ fromJust $ F.minimum $ A.zipWith (+) xs ys
+      fh = Frame { frameMin: min 0.0 minH, frameMax: max 0.0 maxH }
+      fw = Frame { frameMin: 0.0, frameMax: 1.0 }
+  in map (setFrames fh fw)
+         (zipWith stack2 (fillsH (map One xs)) (fillsH (map One ys)))
 
 stack2 :: forall a. VVis a -> VVis a -> VVis a
 stack2 x y = Stacked { vs: cons x (singleton y) }

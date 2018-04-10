@@ -125,11 +125,13 @@ parseVis ctx dec cs (MkPolar v) s =
 
 parseVis ctx dec cs (Fill f) (Cartesian r) =
   if isVisible f
-  then drawBar ctx (getWidth f.vps) (getHeight f.vps) r f.frameW f.frameH f.label (getColor f)
+  then drawBar ctx (getWidth f.vps) (getHeight f.vps) r f.frameW f.frameH
+               f.label (getColor f.vps)
   else pure unit
 parseVis ctx dec cs (Fill f) (Polar w) =
   if isVisible f
-  then drawWedge ctx (getWidth f.vps) (getHeight f.vps) w f.frameW f.frameH f.label (getColor f)
+  then drawWedge ctx (getWidth f.vps) (getHeight f.vps) w f.frameW f.frameH
+                 f.label (getColor f.vps)
   else pure unit
 
 -- | Draw some visual indicator that part of a chart contains variability.
