@@ -8,14 +8,13 @@ module Canvas.Drawing.Rectangular
 import Canvas.Types (CEffects, Rectangle(..))
 import Color (Color, black, cssStringRGBA, white)
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (log)
 import Data.List.Types (List, (:))
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Graphics.Canvas (Context2D, TextAlign(..), fillRect, fillText, setFillStyle, setFont, setLineDash, setLineWidth, setStrokeStyle, setTextAlign, strokeRect, strokeText)
-import Prelude (Unit, discard, pure, show, unit, ($), (&&), (+), (-), (/), (<), (<>), (>=))
-import Util (convertRange)
-import Vis (Orientation(..), VPs(..), VVis(..), getColor, getHeight, getOrientation, getWidth, maybe1, splitPosNeg)
+import Prelude (Unit, discard, pure, show, unit, (&&), (+), (-), (/), (<), (<>), (>=))
+import Util (convertRange, maybe1)
+import Vis (VPs(VPs), VVis(Fill), getColor, getHeight, getOrientation, getWidth, splitPosNeg)
 import Vis.Types (Frame(..), Label(..), Orientation(..), VVis)
 
 drawBar :: forall m.

@@ -24,16 +24,16 @@ module Main
   , hyb2
   , hyb3
   , stk
+  , vlp2
+  , vlp2s
   ) where
-
-import Color.Scheme.MaterialDesign
-import Vis
 
 import Canvas (cComponent)
 import Color (Color, rgba, toRGBA)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Loops (whileJust)
+import Color.Scheme.MaterialDesign
 import DOM.HTML.Types (htmlElementToNode)
 import DOM.Node.Node (firstChild, removeChild)
 import Data.Array (sort)
@@ -44,7 +44,8 @@ import Halogen.VDom.Driver (runUI)
 import Math (ln2, log, sqrt)
 import Prelude (Unit, bind, map, negate, ($), (/))
 import V (V(..))
-import Vis.Types (Frame(..), VVis(..), above, fillsH, fillsW, nextTo, overlay, overlayFlat, stacks)
+import Vis
+import Vis.Types (Frame(..), VVis(..))
 import VisColor (defaultColors)
 
 main :: Eff (HA.HalogenEffects (canvas :: CANVAS, console :: CONSOLE)) Unit

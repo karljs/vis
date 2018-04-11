@@ -1,27 +1,23 @@
 module Util
   ( convertRange
-
+  , doUnsafeListOp
+  , intersperse
   , maximum
+  , maybe1
   , minimum
+  , prependToAll
+  , unsafeNonEmpty
   , vmaximum
   , vminimum
-
-  , intersperse
-  , prependToAll
-
-  , doUnsafeListOp
-  , unsafeNonEmpty
-
-  , guessOrientation
   ) where
 
 import Data.List.NonEmpty (concatMap, fromList, toUnfoldable)
 import Data.List.Types (List(..), NonEmptyList(..), (:))
-import Data.Maybe (fromJust)
+import Data.Maybe (Maybe(..), fromJust)
 import Data.NonEmpty (foldl1)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
-import Prelude (class Ord, max, min, otherwise, ($), (*), (+), (-), (/), (==))
+import Prelude (class Ord, max, min, ($), (*), (+), (-), (/))
 import V (plainVals)
 import V.Types (V)
 
@@ -67,6 +63,6 @@ doUnsafeListOp f ne =
 unsafeNonEmpty :: forall a. List a -> NonEmptyList a
 unsafeNonEmpty l = unsafePartial $ fromJust $ fromList l
 
-guessOrientation :: Number -> Number -> Number
-guessOrientation w h | w == 1.0  = h
-                     | otherwise = w
+maybe1 :: Maybe Number -> Number
+maybe1 (Just n) = n
+maybe1 _ = 1.0
