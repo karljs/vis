@@ -453,6 +453,8 @@ setFrames fh fw (Stacked v) = Stacked (v { vs = map (setFrames fh fw) v.vs })
 
 doStack :: forall a. VVis a -> VVis a -> VVis a
 doStack x (Stacked v) = Stacked (v {vs = NE.cons x v.vs })
+doStack (V d l r) v = V d (doStack l v) (doStack r v)
+doStack v (V d l r) = V d (doStack l v) (doStack r v)
 doStack x y = Stacked { vs: NE.cons x (NE.singleton y) }
 
 stack :: VVis Number -> VVis Number -> VVis Number
