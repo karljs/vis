@@ -36,7 +36,7 @@ instance showVVis :: Show a => Show (VVis a) where
                           <> "H: " <> show f.frameH <> " "
                           <> "W: " <> show f.frameW <> " "
                           <> "label " <> show f.label
-  show (V d l r) = "V " <> d <> " " <> show l <> " " <> show r
+  show (V d l r) = "V " <> d <> "\n" <> show l <> "\n" <> show r <> "\nEnd: " <> d
   show (NextTo v) =
     "NextTo\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show v.vs))
   show (Above v) =

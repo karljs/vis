@@ -56,7 +56,7 @@ import Data.String (take)
 import Data.Tuple (Tuple(..))
 import Math (min)
 import Partial.Unsafe (unsafePartial)
-import Prelude (class Show, flip, map, max, show, ($), (+), (<), (<<<), (<>), (||))
+import Prelude (class Show, flip, map, max, show, ($), (+), (<), (<<<), (<>), (==), (||))
 import Util (doUnsafeListOp, intersperse, maximum, maybe1, minimum, unsafeNonEmpty, vmaximum, vminimum)
 import V (Decision, Dim, Dir(..), V(..), lookupDim)
 import Vis.Types (Frame(..), Label(..), LabelPositionH(..), LabelPositionV(..), Orientation(..), VPs(..), VVis(..))
@@ -451,10 +451,15 @@ setFrames fh fw (MkPolar v) = MkPolar (setFrames fh fw v)
 setFrames fh fw (Overlay v) = Overlay (v { vs = map (setFrames fh fw) v.vs })
 setFrames fh fw (Stacked v) = Stacked (v { vs = map (setFrames fh fw) v.vs })
 
-doStack :: forall a. VVis a -> VVis a -> VVis a
+doStack :: VVis Number -> VVis Number -> VVis Number
 doStack x (Stacked v) = Stacked (v {vs = NE.cons x v.vs })
-doStack (V d l r) v = V d (doStack l v) (doStack r v)
-doStack v (V d l r) = V d (doStack l v) (doStack r v)
+doStack (V d1 l1 r1) (V d2 l2 r2) | d1 == d2 = V d1 (stack l1 r2) (stack r1 r2)
+doStack (V d l r) v = V d (stack l v) (stack r v)
+doStack v (V d l r) = V d (stack l v) (stack r v)
+doStack (MkPolar x) y = MkPolar $ stack x y
+doStack (MkCartesian x) y = MkCartesian $ stack x y
+doStack x (MkPolar y) = MkPolar $ stack x y
+doStack x (MkCartesian y) = MkCartesian $ stack x y
 doStack x y = Stacked { vs: NE.cons x (NE.singleton y) }
 
 stack :: VVis Number -> VVis Number -> VVis Number

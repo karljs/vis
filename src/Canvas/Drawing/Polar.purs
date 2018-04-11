@@ -7,14 +7,15 @@ module Canvas.Drawing.Polar
 import Canvas.Types (Wedge(..), CEffects)
 import Color (Color, cssStringRGBA)
 import Control.Monad.Eff (Eff)
-import Data.List.Types (List)
+import Data.List.Types (List, (:))
 import Data.Maybe (Maybe, maybe)
 import Data.Tuple (Tuple(..))
 import Graphics.Canvas (Context2D, TextAlign(..), arc, beginPath, closePath, fill, fillText, lineTo, moveTo, setFillStyle, setFont, setLineDash, setLineWidth, setStrokeStyle, setTextAlign, stroke, strokeText)
 import Math (cos, sin)
-import Prelude (Unit, discard, pure, show, unit, (*), (+), (/), (<>), (>=))
+import Prelude (Unit, discard, pure, show, unit, (*), (+), (-), (/), (<>), (>=))
 import Util (convertRange)
-import Vis.Types (Frame(..), Label(..), VVis)
+import Vis (getColor, getHeight, splitPosNeg)
+import Vis.Types (Frame(..), Label(..), VVis(..))
 
 drawWedge :: forall m.
   Context2D ->
@@ -50,12 +51,76 @@ drawWedge ctx w h (Wedge wedg') (Frame fw) (Frame fh) ml col = do
   strokeWedge ctx wedg
   maybe (pure unit) (\l -> drawLabelVP ctx l wedg) ml
 
-drawStackedWedges :: forall a m.
+drawStackedWedges :: forall m.
   Context2D ->
-  List (VVis a) ->
+  List (VVis Number) ->
   Wedge ->
   Eff (CEffects m) Unit
-drawStackedWedges ctx vs (Wedge w) = pure unit
+drawStackedWedges ctx (Fill v : vs) (Wedge w) = do
+  let (Tuple pos neg) = splitPosNeg (Fill v : vs)
+      (Frame fh) = v.frameH
+      (Frame fw) = v.frameW
+      zh = convertRange 0.0 (Tuple fh.frameMin fh.frameMax)
+                            (Tuple w.inRad w.outRad)
+  setLineDash ctx []
+  setLineWidth ctx 1.0
+  drawStackedPos ctx pos (Wedge w) zh 0.0
+  drawStackedNeg ctx neg (Wedge w) zh 0.0
+drawStackedWedges _ _ _ = pure unit
+
+drawStackedPos :: forall m.
+  Context2D ->
+  List (VVis Number) ->
+  Wedge ->
+  Number ->
+  Number ->
+  Eff (CEffects m) Unit
+drawStackedPos ctx (Fill v : vs) (Wedge w) zh oh = do
+  let (Frame fh) = v.frameH
+      (Frame fw) = v.frameW
+      vh = convertRange (getHeight v.vps) (Tuple fh.frameMin fh.frameMax)
+                                          (Tuple w.inRad w.outRad)
+  setFillStyle ctx (cssStringRGBA (getColor v.vps))
+  setStrokeStyle ctx "#ffffff"
+  setLineDash ctx []
+  setLineWidth ctx 1.0
+  let wedg = Wedge { x: w.x, y: w.y
+                   , inRad: zh + oh, outRad: vh + oh
+                   , startAngle: w.startAngle
+                   , endAngle: w.endAngle
+                   }
+  fillWedge ctx wedg
+  strokeWedge ctx wedg
+  maybe (pure unit) (\l -> drawLabelVP ctx l wedg) (v.label)
+  drawStackedPos ctx vs (Wedge w) zh (oh + ((vh + oh) - (zh + oh)))
+drawStackedPos _ _ _ _ _ = pure unit
+
+drawStackedNeg :: forall m.
+  Context2D ->
+  List (VVis Number) ->
+  Wedge ->
+  Number ->
+  Number ->
+  Eff (CEffects m) Unit
+drawStackedNeg ctx (Fill v : vs) (Wedge w) zh oh = do
+  let (Frame fh) = v.frameH
+      (Frame fw) = v.frameW
+      vh = convertRange (getHeight v.vps) (Tuple fh.frameMin fh.frameMax)
+                                          (Tuple w.inRad w.outRad)
+  setFillStyle ctx (cssStringRGBA (getColor v.vps))
+  setStrokeStyle ctx "#ffffff"
+  setLineDash ctx []
+  setLineWidth ctx 1.0
+  let wedg = Wedge { x: w.x, y: w.y
+                   , inRad: vh - oh, outRad: zh - oh
+                   , startAngle: w.startAngle
+                   , endAngle: w.endAngle
+                   }
+  fillWedge ctx wedg
+  strokeWedge ctx wedg
+  maybe (pure unit) (\l -> drawLabelVP ctx l wedg) (v.label)
+  drawStackedNeg ctx vs (Wedge w) zh (oh + ((zh + oh) - (vh + oh)))
+drawStackedNeg _ _ _ _ _ = pure unit
 
 drawHintWedge :: forall m. Context2D -> Color -> Wedge -> Eff (CEffects m) Unit
 drawHintWedge ctx col w = do
