@@ -18,6 +18,8 @@ module Main
   , v5
   , vs1
   , vs2
+  , vs3
+  , vs3s
   , plain1
   , exp2
   , hyb1
@@ -26,6 +28,10 @@ module Main
   , stk
   , vlp2
   , vlp2s
+  , vpos1
+  , vpos2
+  , vpos1r
+  , vpos2r
   ) where
 
 import Canvas (cComponent)
@@ -201,3 +207,23 @@ hyb3 = V "TxType" (overlayFlat (plain1 `color1` tgreen) (plain1log)) (overlayFla
 
 stk :: VVis Number
 stk = NextTo { vs: stacks [(-1.0),(-2.0),3.0] [2.0,(-3.0),4.0]}
+
+vpos1 :: VVis Number
+vpos1 =
+  let v = MkPolar $ NextTo { vs: fillsW (map One [8.5,6.3,7.3,6.3,3.9,9.7,7.5,9.6,7.9,9.6]) }
+  in v `color` defaultColors
+
+vpos2 :: VVis Number
+vpos2 =
+  let v = MkPolar $ NextTo { vs: fillsW (map One [6.6,1.3,5.5,1.5,8.1,5.0,7.1,6.4,7.3,8.8]) }
+  in v `color` defaultColors
+
+vpos1r :: VVis Number
+vpos1r =
+  let v = NextTo { vs: fillsH (map One [8.5,6.3,7.3,6.3,3.9,9.7,7.5,9.6,7.9,9.6]) }
+  in v `color` defaultColors
+
+vpos2r :: VVis Number
+vpos2r =
+  let v = NextTo { vs: fillsH (map One [6.6,1.3,5.5,1.5,8.1,5.0,7.1,6.4,7.3,8.8]) }
+  in v `color` defaultColors

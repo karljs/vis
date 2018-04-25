@@ -7,6 +7,10 @@ module Vis
   , removeCoord
   , reorient
   , rotate
+  , vsort
+  , vZipWith
+  , minusHeight
+  , plusHeight
 
   , space
   , leftSpace
@@ -42,6 +46,8 @@ module Vis
   , stacks
   , hspace
   , vspace
+
+
   ) where
 
 import Color (Color, white)
@@ -49,14 +55,14 @@ import Color.Scheme.MaterialDesign (green)
 import Data.Array as A
 import Data.Foldable as F
 import Data.List (List(Nil), concatMap, filter, nub, partition, (:)) as L
-import Data.List.NonEmpty (NonEmptyList, cons, fromList, head, singleton, toList, zipWith) as NE
+import Data.List.NonEmpty (NonEmptyList, cons, fromList, head, singleton, sortBy, toList, zipWith) as NE
 import Data.Map (empty)
 import Data.Maybe (Maybe(..), fromJust, maybe)
 import Data.String (take)
 import Data.Tuple (Tuple(..))
 import Math (min)
 import Partial.Unsafe (unsafePartial)
-import Prelude (class Show, flip, map, max, show, ($), (+), (<), (<<<), (<>), (==), (||))
+import Prelude (class Show, comparing, flip, map, max, show, ($), (+), (-), (<), (<<<), (<>), (==), (||))
 import Util (doUnsafeListOp, intersperse, maximum, maybe1, minimum, unsafeNonEmpty, vmaximum, vminimum)
 import V (Decision, Dim, Dir(..), V(..), lookupDim)
 import Vis.Types (Frame(..), Label(..), LabelPositionH(..), LabelPositionV(..), Orientation(..), VPs(..), VVis(..))
@@ -100,6 +106,62 @@ flop (Stacked v) = Stacked (v { vs = map flop v.vs })
 -- | Flop, then reorient
 rotate :: forall a. VVis a -> VVis a
 rotate = reorient <<< flop
+
+vsort :: VVis Number -> VVis Number
+vsort (NextTo v) = NextTo (v { vs = NE.sortBy (comparing guessMain) v.vs })
+vsort (Above v) = Above (v { vs = NE.sortBy (comparing guessMain) v.vs })
+vsort (MkPolar v) = MkPolar $ vsort v
+vsort (MkCartesian v) = MkCartesian $ vsort v
+vsort (V d l r) = V d (vsort l) (vsort r)
+vsort v = v
+
+guessMain :: VVis Number -> Number
+guessMain (Fill v) = case getOrientation v.vps of
+  Vertical -> getHeight v.vps
+  Horizontal -> getWidth v.vps
+guessMain _ = 0.0
+
+vZipWith :: (VPs -> VPs -> VPs) -> VVis Number -> VVis Number -> VVis Number
+vZipWith f v1 v2 =
+  let v3 = vz f v1 v2
+      fh = Frame { frameMin: min 0.0 (visMinH v3)
+                 , frameMax: max 0.0 (visMaxH v3) }
+      fw = Frame { frameMin: min 0.0 (visMinW v3)
+                 , frameMax: max 0.0 (visMaxW v3) }
+  in setFrames fh fw v3 where
+    vz :: (VPs -> VPs -> VPs) -> VVis Number -> VVis Number -> VVis Number
+    vz f (NextTo v1) (NextTo v2) = NextTo { vs: zipFills f v1.vs v2.vs }
+    vz f (Above v1) (Above v2) = Above { vs: zipFills f v1.vs v2.vs }
+    vz f (MkCartesian v1) v2 = MkCartesian (vz f v1 v2)
+    vz f v1 (MkCartesian v2) = MkCartesian (vz f v1 v2)
+    vz f (MkPolar v1) v2 = MkPolar (vz f v1 v2)
+    vz f v1 (MkPolar v2) = MkPolar (vz f v1 v2)
+    vz f (V d1 l1 r1) (V d2 l2 r2) | d1 == d2 =
+      V d1 (vz f l1 l2) (vz f r1 r2)
+    vz f (V d l r) v = V d (vz f l v) (vz f r v)
+    vz f v (V d l r) = V d (vz f l v) (vz f r v)
+    vz _ v _ = v
+
+zipFills ::
+  (VPs -> VPs -> VPs) ->
+  NE.NonEmptyList (VVis Number) ->
+  NE.NonEmptyList (VVis Number) ->
+  NE.NonEmptyList (VVis Number)
+zipFills f v1 v2 = NE.zipWith (getVPsZip f) v1 v2
+
+getVPsZip ::
+  (VPs -> VPs -> VPs) ->
+  VVis Number -> VVis Number -> VVis Number
+getVPsZip f (Fill v1) (Fill v2) = Fill (v1 { vps = f v1.vps v2.vps })
+getVPsZip _ v _ = v
+
+minusHeight :: VPs -> VPs -> VPs
+minusHeight (VPs v1) (VPs v2) =
+  VPs (v1 { height = Just $ maybe1 v1.height - maybe1 v2.height })
+
+plusHeight :: VPs -> VPs -> VPs
+plusHeight (VPs v1) (VPs v2) =
+  VPs (v1 { height = Just $ maybe1 v1.height + maybe1 v2.height })
 
 -- | Iterate over a visualization and remove all the constructors that change
 -- | the coordinate system.
@@ -488,3 +550,4 @@ stacks xs ys =
 
 stack2 :: forall a. VVis a -> VVis a -> VVis a
 stack2 x y = Stacked { vs: NE.cons x (NE.singleton y) }
+
