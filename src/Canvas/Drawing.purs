@@ -33,7 +33,7 @@ import Math (pi)
 import Prelude (Unit, discard, flip, map, min, pure, unit, ($), (*), (+), (-), (/))
 import UI (DecisionColors)
 import V (Decision, Dir(..), Dim, lookupDim, notInDec)
-import Vis (getColor, getHeight, getWidth, isVisible, removeCoord, selectVis, visDims)
+import Vis (Orientation(..), getColor, getHeight, getOrientation, getWidth, isVisible, removeCoord, selectVis, visDims)
 import Vis.Types (VPs(..), VVis(..))
 
 -- The main entry point for parsing apart a visualization and rendering it.
@@ -152,7 +152,15 @@ relativeWidth dec (V d l r) =
     Just L -> relativeWidth dec l
     Just R -> relativeWidth dec r
     _      -> 1.0
+relativeWidth _ (NextTo v) = widthIfHorizontal (toList v.vs)
 relativeWidth _ _ = 1.0
+
+widthIfHorizontal :: List (VVis Number) -> Number
+widthIfHorizontal Nil = 0.0
+widthIfHorizontal (Fill f : vs) = case getOrientation f.vps of
+  Vertical -> 1.0
+  Horizontal -> getWidth f.vps + widthIfHorizontal vs
+widthIfHorizontal _ = 1.0
 
 relativeHeight :: Decision -> VVis Number -> Number
 relativeHeight _ (Fill f) =

@@ -11,6 +11,7 @@ module Vis
   , vZipWith
   , minusHeight
   , plusHeight
+  , setFrames
 
   , space
   , leftSpace
@@ -128,6 +129,7 @@ vZipWith f v1 v2 =
                  , frameMax: max 0.0 (visMaxH v3) }
       fw = Frame { frameMin: min 0.0 (visMinW v3)
                  , frameMax: max 0.0 (visMaxW v3) }
+  -- in fixLabels $ setFrames fh fw v3 where
   in setFrames fh fw v3 where
     vz :: (VPs -> VPs -> VPs) -> VVis Number -> VVis Number -> VVis Number
     vz f (NextTo v1) (NextTo v2) = NextTo { vs: zipFills f v1.vs v2.vs }
@@ -154,6 +156,20 @@ getVPsZip ::
   VVis Number -> VVis Number -> VVis Number
 getVPsZip f (Fill v1) (Fill v2) = Fill (v1 { vps = f v1.vps v2.vps })
 getVPsZip _ v _ = v
+
+fixLabels :: VVis Number -> VVis Number
+fixLabels (Fill v) =
+  let l = case getOrientation v.vps of
+            Vertical -> defaultLabel (getHeight v.vps)
+            Horizontal -> defaultLabel (getWidth v.vps)
+  in Fill (v { label = Just l })
+fixLabels (NextTo v) = NextTo (v { vs = map fixLabels v.vs })
+fixLabels (Above v) = Above (v { vs = map fixLabels v.vs })
+fixLabels (Overlay v) = Overlay (v { vs = map fixLabels v.vs })
+fixLabels (Stacked v) = Stacked (v { vs = map fixLabels v.vs })
+fixLabels (V d l r) = V d (fixLabels l) (fixLabels r)
+fixLabels (MkCartesian v) = MkCartesian (fixLabels v)
+fixLabels (MkPolar v) = MkPolar (fixLabels v)
 
 minusHeight :: VPs -> VPs -> VPs
 minusHeight (VPs v1) (VPs v2) =
@@ -434,7 +450,8 @@ genFill fh fw o (One (Tuple w h)) =
   in Fill { vps: vp
           , frameH: fh
           , frameW: fw
-          , label: Just l
+          , label: Nothing
+          -- , label: Just l
           }
 genFill fh fw o (Chc d l r) = V d (genFill fh fw o l) (genFill fh fw o r)
 
@@ -460,7 +477,7 @@ spaceFill w h o =
 defaultLabel :: forall a. Show a => a -> Label
 defaultLabel v = Label { text: take 4 (show v)
                        , position: Tuple VPosTop HPosMiddle
-                       , size: 36.0 }
+                       , size: 48.0 }
 
 -- | An _unsafe_ helper function (when the parameter list is empty) for
 -- | composing with `NextTo`.
@@ -493,11 +510,15 @@ overlayFlat v1 v2 =
       maxW = max (visMaxW v1) (visMaxW v2)
       minH = min (visMinH v1) (visMinH v2)
       minW = min (visMinW v1) (visMinW v2)
-      v1f = setFrames (Frame { frameMin: minH, frameMax: maxH })
-                      (Frame { frameMin: minW, frameMax: maxW })
+      v1f = setFrames (Frame { frameMin: min 0.0 minH
+                             , frameMax: max 0.0 maxH })
+                      (Frame { frameMin: min 0.0 minW
+                             , frameMax: max 0.0 maxW })
                       v1
-      v2f = setFrames (Frame { frameMin: minH, frameMax: maxH })
-                      (Frame { frameMin: minW, frameMax: maxW })
+      v2f = setFrames (Frame { frameMin: min 0.0 minH
+                             , frameMax: max 0.0 maxH })
+                      (Frame { frameMin: min 0.0 minW
+                             , frameMax: max 0.0 maxW })
                       v2
   in Overlay { vs: NE.cons v1f (NE.singleton v2f) }
 

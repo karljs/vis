@@ -21,7 +21,8 @@ module Main
   , vs3
   , vs3s
   , plain1
-  , exp2
+  , plain1log
+  , plain1sqrt
   , hyb1
   , hyb2
   , hyb3
@@ -32,17 +33,30 @@ module Main
   , vpos2
   , vpos1r
   , vpos2r
+  , piedet
+  , threea
+  , threeb
+  , threec
+  , foura
+  , fourb
+  , fivea
+  , fiveb
+  , fivec
   ) where
+
+import Color.Scheme.MaterialDesign
+import Vis
 
 import Canvas (cComponent)
 import Color (Color, rgba, toRGBA)
+import Color.Scheme.X11 (lightblue, lightseagreen)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Loops (whileJust)
-import Color.Scheme.MaterialDesign
 import DOM.HTML.Types (htmlElementToNode)
 import DOM.Node.Node (firstChild, removeChild)
 import Data.Array (sort)
+import Data.List.NonEmpty (cons, head, singleton)
 import Graphics.Canvas (CANVAS)
 import Halogen as H
 import Halogen.Aff as HA
@@ -50,7 +64,6 @@ import Halogen.VDom.Driver (runUI)
 import Math (ln2, log, sqrt)
 import Prelude (Unit, bind, map, negate, ($), (/))
 import V (V(..))
-import Vis
 import Vis.Types (Frame(..), VVis(..))
 import VisColor (defaultColors)
 
@@ -145,16 +158,6 @@ plain1log = NextTo { vs: fillsH vs3log }
 plain1sqrt :: VVis Number
 plain1sqrt = NextTo { vs: fillsH vs3sqrt }
 
-deets :: Array (V Number)
-deets = [ Chc "Region 1" (One 0.4) (One 0.4)
-        , Chc "Region 2" (One 1.0) (One 1.0)
-        , Chc "Region 3" (One 0.9) (One 0.9)
-        , Chc "Region 4" (One 1.6) (One 1.6)
-        , Chc "Region 5" (One 0.3) (One 0.3) ]
-
-exp2 :: VVis Number
-exp2 = (reorient $ MkPolar $ NextTo { vs: fillsH deets }) `color` defaultColors
-
 vs3s :: Array (V Number)
 vs3s = map One $ sort [ 3.1, (1.0), (1.2), 1.7, 1.2, 2.9, 2.4, (2.5), 2.1, 2.3 ]
 
@@ -227,3 +230,64 @@ vpos2r :: VVis Number
 vpos2r =
   let v = NextTo { vs: fillsH (map One [6.6,1.3,5.5,1.5,8.1,5.0,7.1,6.4,7.3,8.8]) }
   in v `color` defaultColors
+
+piedet :: VVis Number
+piedet =
+  let fh  = Frame {frameMin: 0.0, frameMax: 1.0}
+      fw  = Frame {frameMin: 0.0, frameMax: 3.0}
+      v1  = head (fillsW [One 3.0]) `color1` green
+      v11 = head (fillsW [One 1.9]) `color1` lightGreen
+      v12 = head (fillsW [One 0.7]) `color1` lightseagreen
+      v13 = head (fillsW [One 0.4]) `color1` green
+      v2  = head (fillsW [One 2.0]) `color1` blue
+      v21 = head (fillsW [One 1.0]) `color1` lightblue
+      v22 = head (fillsW [One 0.4]) `color1` blueGrey
+      v23 = head (fillsW [One 0.6]) `color1` blue
+      v3  = head (fillsW [One 0.8]) `color1` amber
+      v31 = head (fillsW [One 0.2]) `color1` orange
+      v32 = head (fillsW [One 0.3]) `color1` deepOrange
+      v33 = head (fillsW [One 0.3]) `color1` amber
+      right1 = NextTo { vs: cons v11 (cons v12 (singleton v13)) }
+      right2 = NextTo { vs: cons v21 (cons v22 (singleton v23)) }
+      right3 = NextTo { vs: cons v31 (cons v32 (singleton v33)) }
+      x1 = V "Region 1" v1 right1
+      x2 = V "Region 2" v2 right2
+      x3 = V "Region 3" v3 right3
+  in setFrames fh fw $
+       MkPolar $
+         NextTo { vs: cons x1 (cons x2 (singleton x3)) }
+
+threea :: VVis Number
+threea = v1
+
+threeb :: VVis Number
+threeb = above [v5 `color` defaultColors, MkPolar $ reorient v5 `color` defaultColors] `space` 0.1
+
+threec :: VVis Number
+threec = MkPolar $ above [plain1 `color1` orange, vlp2 `color1` blue]
+
+foura :: VVis Number
+foura = overlayFlat (v4 `color1` tblue) v5
+
+fourb :: VVis Number
+fourb = overTest
+
+fivea :: VVis Number
+fivea = nextTo [above [vpos1r, vpos2r] `space` 0.2, vZipWith minusHeight vpos1r vpos2r] `space` 0.2
+
+fiveb :: VVis Number
+fiveb = V "TxType" (overlayFlat (plain1log `color1` tblue) (plain1 `color1` green)) (overlayFlat (plain1sqrt `color1` tblue) (plain1 `color1` green))
+
+fivech1 :: VVis Number
+fivech1 =
+  let v = MkPolar $ NextTo { vs: fillsW (map One [1.4, 0.7, 1.9, 1.2]) }
+  in v `color` defaultColors
+
+fivech2 :: VVis Number
+fivech2 =
+  let v = MkPolar $ NextTo { vs: fillsW (map One [1.0, 2.1, 0.9]) }
+  in v `color` defaultColors
+
+
+fivec :: VVis Number
+fivec = V "Sorted" (MkPolar $ above [fivech1, fivech2]) (MkPolar $ above [vsort fivech1, vsort fivech2])
