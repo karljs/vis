@@ -47,6 +47,7 @@ module Vis
   , stacks
   , hspace
   , vspace
+  , vPie
 
 
   ) where
@@ -56,7 +57,8 @@ import Color.Scheme.MaterialDesign (green)
 import Data.Array as A
 import Data.Foldable as F
 import Data.List (List(Nil), concatMap, filter, nub, partition, (:)) as L
-import Data.List.NonEmpty (NonEmptyList, cons, fromList, head, singleton, sortBy, toList, zipWith) as NE
+import Data.List.NonEmpty (NonEmptyList, cons, fromFoldable, fromList, head, singleton, sortBy, toList, zipWith) as NE
+
 import Data.Map (empty)
 import Data.Maybe (Maybe(..), fromJust, maybe)
 import Data.String (take)
@@ -64,8 +66,9 @@ import Data.Tuple (Tuple(..))
 import Math (min)
 import Partial.Unsafe (unsafePartial)
 import Prelude (class Show, comparing, flip, map, max, show, ($), (+), (-), (<), (<<<), (<>), (==), (||))
-import Util (doUnsafeListOp, intersperse, maximum, maybe1, minimum, unsafeNonEmpty, vmaximum, vminimum)
-import V (Decision, Dim, Dir(..), V(..), lookupDim)
+import Type.Data.Boolean (True)
+import Util (doUnsafeListOp, intersperse, maximum, maybe1, minimum, unsafeMaybe, unsafeNonEmpty, vmaximum, vminimum) as U
+import V (Decision, Dim, Dir(..), V(..), lookupDim, plainVals)
 import Vis.Types (Frame(..), Label(..), LabelPositionH(..), LabelPositionV(..), Orientation(..), VPs(..), VVis(..))
 
 --------------------------------------------------------------------------------
@@ -173,11 +176,11 @@ fixLabels (MkPolar v) = MkPolar (fixLabels v)
 
 minusHeight :: VPs -> VPs -> VPs
 minusHeight (VPs v1) (VPs v2) =
-  VPs (v1 { height = Just $ maybe1 v1.height - maybe1 v2.height })
+  VPs (v1 { height = v1.height - v2.height })
 
 plusHeight :: VPs -> VPs -> VPs
 plusHeight (VPs v1) (VPs v2) =
-  VPs (v1 { height = Just $ maybe1 v1.height + maybe1 v2.height })
+  VPs (v1 { height = v1.height + v2.height })
 
 -- | Iterate over a visualization and remove all the constructors that change
 -- | the coordinate system.
@@ -193,16 +196,16 @@ removeCoord (Stacked v) = Stacked (v { vs = map removeCoord v.vs })
 
 space :: VVis Number -> Number -> VVis Number
 space (NextTo v) n =
-  let newvs = doUnsafeListOp (intersperse (hspace n)) v.vs
+  let newvs = U.doUnsafeListOp (U.intersperse (hspace n)) v.vs
   in NextTo (v { vs = newvs })
 space (Above v) n =
-  let newvs = doUnsafeListOp (intersperse (vspace n)) v.vs
+  let newvs = U.doUnsafeListOp (U.intersperse (vspace n)) v.vs
   in Above (v { vs = newvs })
 space (V d l r) n = V d (space l n) (space r n)
 space (MkCartesian v) n = MkCartesian (space v n)
 space (MkPolar v) n = MkPolar (space v n)
 space (Overlay v) n =
-  let newvs = doUnsafeListOp (intersperse (vspace n)) v.vs
+  let newvs = U.doUnsafeListOp (U.intersperse (vspace n)) v.vs
   in Overlay (v { vs = newvs })
 space (Stacked v) _ = Stacked v
 space (Fill v) _ = Fill v
@@ -297,10 +300,10 @@ isVisible r = let (VPs vps) = r.vps
               in vps.visible
 
 getHeight :: VPs -> Number
-getHeight (VPs vps) = maybe1 vps.height
+getHeight (VPs vps) = vps.height
 
 getWidth :: VPs -> Number
-getWidth (VPs vps) = maybe1 vps.width
+getWidth (VPs vps) = vps.width
 
 getColor :: VPs -> Color
 getColor (VPs vps) = vps.color
@@ -318,8 +321,7 @@ splitPosNeg vs =
 anyNegative :: VVis Number -> Boolean
 anyNegative (Fill f) =
   let (VPs vps) = f.vps
-  in (maybe false (\h -> h < 0.0) vps.height) ||
-     (maybe false (\w -> w < 0.0) vps.width)
+  in vps.height < 0.0 || vps.width < 0.0
 anyNegative _ = false
 
 isFill :: forall a. VVis a -> Boolean
@@ -340,50 +342,50 @@ visOrientation (Stacked v) = visOrientation (NE.head v.vs)
 visMaxH :: VVis Number -> Number
 visMaxH (Fill f) = getHeight f.vps
 visMaxH (V d l r) = max (visMaxH l) (visMaxH r)
-visMaxH (NextTo v) = maximum (map visMaxH v.vs)
-visMaxH (Above v) = maximum (map visMaxH v.vs)
+visMaxH (NextTo v) = U.maximum (map visMaxH v.vs)
+visMaxH (Above v) = U.maximum (map visMaxH v.vs)
 visMaxH (MkCartesian v) = visMaxH v
 visMaxH (MkPolar v) = visMaxH v
-visMaxH (Overlay v) = maximum (map visMaxH v.vs)
+visMaxH (Overlay v) = U.maximum (map visMaxH v.vs)
 visMaxH (Stacked v) = case visOrientation (NE.head v.vs) of
   Vertical -> F.foldr (+) 0.0 (map visMaxH v.vs)
-  Horizontal -> maximum (map visMaxH v.vs)
+  Horizontal -> U.maximum (map visMaxH v.vs)
 
 visMinH :: VVis Number -> Number
 visMinH (Fill f) = getHeight f.vps
 visMinH (V d l r) = min (visMinH l) (visMinH r)
-visMinH (NextTo v) = minimum (map visMinH v.vs)
-visMinH (Above v) = minimum (map visMinH v.vs)
+visMinH (NextTo v) = U.minimum (map visMinH v.vs)
+visMinH (Above v) = U.minimum (map visMinH v.vs)
 visMinH (MkCartesian v) = visMinH v
 visMinH (MkPolar v) = visMinH v
-visMinH (Overlay v) = minimum (map visMinH v.vs)
+visMinH (Overlay v) = U.minimum (map visMinH v.vs)
 visMinH (Stacked v) = case visOrientation (NE.head v.vs) of
   Vertical -> F.foldr (+) 0.0 (map visMinH v.vs)
-  Horizontal -> minimum (map visMinH v.vs)
+  Horizontal -> U.minimum (map visMinH v.vs)
 
 visMaxW :: VVis Number -> Number
 visMaxW (Fill f) = getWidth f.vps
 visMaxW (V d l r) = max (visMaxW l) (visMaxW r)
-visMaxW (NextTo v) = maximum (map visMaxW v.vs)
-visMaxW (Above v) = maximum (map visMaxW v.vs)
+visMaxW (NextTo v) = U.maximum (map visMaxW v.vs)
+visMaxW (Above v) = U.maximum (map visMaxW v.vs)
 visMaxW (MkCartesian v) = visMaxW v
 visMaxW (MkPolar v) = visMaxW v
-visMaxW (Overlay v) = maximum (map visMaxW v.vs)
+visMaxW (Overlay v) = U.maximum (map visMaxW v.vs)
 visMaxW (Stacked v) = case visOrientation (NE.head v.vs) of
   Horizontal -> F.foldr (+) 0.0 (map visMaxW v.vs)
-  Vertical -> maximum (map visMaxW v.vs)
+  Vertical -> U.maximum (map visMaxW v.vs)
 
 visMinW :: VVis Number -> Number
 visMinW (Fill f) = getWidth f.vps
 visMinW (V d l r) = min (visMinW l) (visMinW r)
-visMinW (NextTo v) = minimum (map visMinW v.vs)
-visMinW (Above v) = minimum (map visMinW v.vs)
+visMinW (NextTo v) = U.minimum (map visMinW v.vs)
+visMinW (Above v) = U.minimum (map visMinW v.vs)
 visMinW (MkCartesian v) = visMinW v
 visMinW (MkPolar v) = visMinW v
-visMinW (Overlay v) = minimum (map visMinW v.vs)
+visMinW (Overlay v) = U.minimum (map visMinW v.vs)
 visMinW (Stacked v) = case visOrientation (NE.head v.vs) of
   Horizontal -> F.foldr (+) 0.0 (map visMinW v.vs)
-  Vertical -> minimum (map visMinW v.vs)
+  Vertical -> U.minimum (map visMinW v.vs)
 
 --------------------------------------------------------------------------------
 -- Helper functions for (mostly unsafely) constructing nonempty lists of things
@@ -404,6 +406,35 @@ fillsW wsarr =
       fh = Frame { frameMin: 0.0, frameMax: 1.0 }
   in fills (map (setH 1.0) ws) fh (genFrame ws) Horizontal
 
+fillsWA :: Frame Number -> Frame Number -> V (Array Number) -> VVis Number
+fillsWA fh fw (Chc d l r) = V d (fillsWA fh fw l) (fillsWA fh fw r)
+fillsWA fh fw (One x) =
+  let farr = map (mkFill fh fw) x
+  in NextTo { vs: unsafePartial (fromJust (NE.fromFoldable farr)) } where
+    mkFill fh fw v =
+      let theVPs = VPs { height: 1.0
+                       , width: v
+                       , color: green
+                       , visible: true
+                       , orientation: Horizontal
+                       }
+      in Fill { vps: theVPs
+              , frameH: fh
+              , frameW: fw
+              , label: Nothing
+              }
+
+vPie :: Array (V (Array Number)) -> VVis Number
+vPie xs =
+  let mna = map (map (\a -> U.unsafeMaybe (F.minimum a))) (map plainVals xs)
+      mn  = U.unsafeMaybe (F.minimum (map U.minimum mna))
+      mxa = map (map (\a -> U.unsafeMaybe (F.maximum a))) (map plainVals xs)
+      mx  = U.unsafeMaybe (F.maximum (map U.maximum mna))
+      fh = Frame { frameMin: 0.0, frameMax: 1.0 }
+      fw = Frame { frameMin: min 0.0 mn, frameMax: max 0.0 mx}
+      fs = map (fillsWA fh fw) xs
+  in MkPolar $ NextTo { vs: U.unsafeMaybe (NE.fromFoldable fs) }
+
 setW :: Number -> V Number -> V (Tuple Number Number)
 setW w (Chc d l r) = Chc d (setW w l) (setW w r)
 setW w (One h) = One (Tuple w h)
@@ -418,8 +449,8 @@ setH h (One w) = One (Tuple w h)
 genFrame :: L.List (V Number) -> Frame Number
 genFrame vs =
   let vs'  = unsafePartial $ fromJust (NE.fromList vs)
-      fmin = min (vminimum vs') 0.0
-      fmax = max (vmaximum vs') 0.0
+      fmin = min (U.vminimum vs') 0.0
+      fmax = max (U.vmaximum vs') 0.0
   in Frame { frameMax: fmax, frameMin: fmin }
 
 fills ::
@@ -428,7 +459,7 @@ fills ::
   Frame Number ->
   Orientation ->
   NE.NonEmptyList (VVis Number)
-fills vs fh fw o = unsafeNonEmpty $ map (genFill fh fw o) vs
+fills vs fh fw o = U.unsafeNonEmpty $ map (genFill fh fw o) vs
 
 -- | For a variational number, produce a `Fill` visualization.
 genFill ::
@@ -438,8 +469,8 @@ genFill ::
   V (Tuple Number Number) ->
   VVis Number
 genFill fh fw o (One (Tuple w h)) =
-  let vp = VPs { height: Just h
-               , width: Just w
+  let vp = VPs { height: h
+               , width: w
                , color: green
                , visible: true
                , orientation: o
@@ -450,8 +481,8 @@ genFill fh fw o (One (Tuple w h)) =
   in Fill { vps: vp
           , frameH: fh
           , frameW: fw
-          , label: Nothing
-          -- , label: Just l
+          -- , label: Nothing
+          , label: Just l
           }
 genFill fh fw o (Chc d l r) = V d (genFill fh fw o l) (genFill fh fw o r)
 
@@ -462,8 +493,10 @@ vspace :: Number -> VVis Number
 vspace v = spaceFill Nothing (Just v) Vertical
 
 spaceFill :: Maybe Number -> Maybe Number -> Orientation -> VVis Number
-spaceFill w h o =
-  let vp = VPs { height: h
+spaceFill mw mh o =
+  let w = U.maybe1 mw
+      h = U.maybe1 mh
+      vp = VPs { height: h
                , width: w
                , color: white
                , visible: false
@@ -571,4 +604,3 @@ stacks xs ys =
 
 stack2 :: forall a. VVis a -> VVis a -> VVis a
 stack2 x y = Stacked { vs: NE.cons x (NE.singleton y) }
-

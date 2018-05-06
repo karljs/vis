@@ -7,6 +7,7 @@ module Util
   , minimum
   , prependToAll
   , unsafeNonEmpty
+  , unsafeMaybe
   , vmaximum
   , vminimum
   ) where
@@ -62,6 +63,9 @@ doUnsafeListOp f ne =
 
 unsafeNonEmpty :: forall a. List a -> NonEmptyList a
 unsafeNonEmpty l = unsafePartial $ fromJust $ fromList l
+
+unsafeMaybe :: forall a. Maybe a -> a
+unsafeMaybe x = unsafePartial (fromJust x)
 
 maybe1 :: Maybe Number -> Number
 maybe1 (Just n) = n

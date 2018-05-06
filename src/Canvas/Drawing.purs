@@ -144,9 +144,7 @@ drawVHint ctx col (Polar w) = drawHintWedge ctx col w
 relativeWidth :: Decision -> VVis Number -> Number
 relativeWidth _ (Fill f) =
   let (VPs vps) = f.vps
-  in case vps.width of
-       Nothing -> 1.0
-       Just w  -> abs w
+  in abs vps.width
 relativeWidth dec (V d l r) =
   case lookupDim d dec of
     Just L -> relativeWidth dec l
@@ -165,16 +163,13 @@ widthIfHorizontal _ = 1.0
 relativeHeight :: Decision -> VVis Number -> Number
 relativeHeight _ (Fill f) =
   let (VPs vps) = f.vps
-  in case vps.height of
-       Nothing -> 1.0
-       Just w  -> abs w
+  in abs vps.height
 relativeHeight dec (V d l r) =
   case lookupDim d dec of
     Just L -> relativeHeight dec l
     Just R -> relativeHeight dec r
     _      -> 1.0
 relativeHeight _ _ = 1.0
-
 
 --------------------------------------------------------------------------------
 -- Functions related to splitting spaces

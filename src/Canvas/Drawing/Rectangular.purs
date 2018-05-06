@@ -81,8 +81,8 @@ drawStackedPos ctx (Fill v : vs) (Rectangle r) zh zw oh ow = do
   let (Frame fh) = v.frameH
       (Frame fw) = v.frameW
       (VPs vps) = v.vps
-      h = maybe1 vps.height
-      w = maybe1 vps.width
+      h = vps.height
+      w = vps.width
       vh = convertRange h (Tuple fh.frameMin fh.frameMax)
                           (Tuple (r.y + r.h) r.y)
       vw = convertRange w (Tuple fw.frameMin fw.frameMax)

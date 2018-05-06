@@ -49,8 +49,8 @@ instance showVVis :: Show a => Show (VVis a) where
     "Stacked\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show s.vs))
 
 data VPs = VPs
-  { height :: Maybe Number
-  , width :: Maybe Number
+  { height :: Number
+  , width :: Number
   , color :: Color
   , visible :: Boolean
   , orientation :: Orientation

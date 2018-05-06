@@ -210,7 +210,7 @@ drawLabelWedge ctx l (Wedge w) = do
       hr = (w.inRad + w.outRad) / 2.0
       tx = cos ha * hr + w.x
       ty = sin ha * hr + w.y
-  setTextAlign ctx AlignCenter
+  setTextAlign ctx AlignLeft
   drawLabelCommon ctx tx ty l
 
 -- | Handle all of the label drawing parts that are common regardless of

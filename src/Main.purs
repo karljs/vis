@@ -42,14 +42,14 @@ module Main
   , fivea
   , fiveb
   , fivec
+  , karl
   ) where
-
-import Color.Scheme.MaterialDesign
-import Vis
 
 import Canvas (cComponent)
 import Color (Color, rgba, toRGBA)
-import Color.Scheme.X11 (lightblue, lightseagreen)
+import Color.Scheme.Clrs (gray)
+import Color.Scheme.MaterialDesign
+import Color.Scheme.X11 (darkgray, darkslategrey, lightblue, lightgray, lightseagreen, lightslategray)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Loops (whileJust)
@@ -64,6 +64,7 @@ import Halogen.VDom.Driver (runUI)
 import Math (ln2, log, sqrt)
 import Prelude (Unit, bind, map, negate, ($), (/))
 import V (V(..))
+import Vis
 import Vis.Types (Frame(..), VVis(..))
 import VisColor (defaultColors)
 
@@ -256,6 +257,11 @@ piedet =
   in setFrames fh fw $
        MkPolar $
          NextTo { vs: cons x1 (cons x2 (singleton x3)) }
+
+karl :: VVis Number
+karl = vPie [ Chc "Region 1" (One [3.0]) (One [1.9, 0.7, 0.4])
+            , Chc "Region 2" (One [2.0]) (One [1.0, 0.4, 0.6])
+            , Chc "Region 3" (One [0.8]) (One [0.2, 0.3, 0.3])]
 
 threea :: VVis Number
 threea = v1
