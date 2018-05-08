@@ -21,12 +21,12 @@ import Vis.Types (VVis)
 -- | A type corresponding to a part of a canvas that we can render to, which
 -- | is used to partition the space as we match complicated visualizations.
 data Space
-  = Cartesian Rectangle
-  | Polar Wedge
+  = SpaceCartesian Rectangle
+  | SpacePolar Wedge
 
 instance showSpace :: Show Space where
-  show (Cartesian r) = "Cartesian: " <> show r
-  show (Polar w) = "Polar: " <> show w
+  show (SpaceCartesian r) = "SpaceCartesian: " <> show r
+  show (SpacePolar w) = "SpacePolar: " <> show w
 
 -- | A rectangle is represented as a top left corner plus a width and height.
 -- |
@@ -46,7 +46,7 @@ instance showRectangle :: Show Rectangle where
   show (Rectangle r) = "Rectangle (" <> show r.x <> ", " <> show r.y <> ") "
                                      <> show r.w <> " " <> show r.h
 
--- | A wedge represents a chunk of polar space.  It could be anything from a
+-- | A wedge represents a chunk of SpacePolar space.  It could be anything from a
 -- | circle to a piece of a doughnut.
 -- |
 -- | - The coordinates of the center of the corresponding circle `x` and `y`

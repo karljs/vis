@@ -61,7 +61,7 @@ smallMult :: forall m.
   Rectangle ->
   Eff (CEffects m) Unit
 smallMult Nil ctx dec cs v r = do
-  parseVis ctx dec cs v (Cartesian r)
+  parseVis ctx dec cs v (SpaceCartesian r)
   drawSMRect ctx r
 smallMult (d : ds) ctx dec cs v r = do
   let (Tuple rl rr) = splitHalf r
@@ -85,26 +85,26 @@ parseVis :: forall m.
   VVis Number ->
   Space ->
   Eff (CEffects m) Unit
-parseVis ctx dec cs (NextTo vs) (Cartesian r) = do
+parseVis ctx dec cs (NextTo vs) (SpaceCartesian r) = do
   let bs = splitBoxH r (toList $ map (relativeWidth dec) vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) bs
-parseVis ctx dec cs (NextTo vs) (Polar w) = do
+parseVis ctx dec cs (NextTo vs) (SpacePolar w) = do
   let ws = splitWedgeHOdd w (toList $ map (relativeWidth dec) vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) ws
 
-parseVis ctx dec cs (Above vs) (Cartesian r) = do
+parseVis ctx dec cs (Above vs) (SpaceCartesian r) = do
   let bs = splitBoxV r (toList $ map (relativeHeight dec) vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) bs
-parseVis ctx dec cs (Above vs) (Polar w) = do
+parseVis ctx dec cs (Above vs) (SpacePolar w) = do
   let ws = splitWedgeVEven w (length vs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) ws
 
 parseVis ctx dec cs (Overlay vs) sp = do
   sequence_ $ map (\vis -> parseVis ctx dec cs vis sp) (reverse vs)
 
-parseVis ctx dec cs (Stacked vs) (Cartesian r) = do
+parseVis ctx dec cs (Stacked vs) (SpaceCartesian r) = do
   drawStackedBars ctx (toList vs) r
-parseVis ctx dec cs (Stacked vs) (Polar w) = do
+parseVis ctx dec cs (Stacked vs) (SpacePolar w) = do
   drawStackedWedges ctx (toList vs) w
 
 parseVis ctx dec cs (V d l r) sp = do
@@ -118,17 +118,17 @@ parseVis ctx dec cs (V d l r) sp = do
 
 -- The removeCoord stuff shouldn't be here, but instead should be done when
 -- applying the appropriate transformation functions.  This is a hack.
-parseVis ctx dec cs (MkCartesian v) s =
+parseVis ctx dec cs (Cartesian v) s =
   parseVis ctx dec cs (removeCoord v) (toCartesian s)
-parseVis ctx dec cs (MkPolar v) s =
+parseVis ctx dec cs (Polar v) s =
   parseVis ctx dec cs (removeCoord v) (toPolar s)
 
-parseVis ctx dec cs (Fill f) (Cartesian r) =
+parseVis ctx dec cs (Fill f) (SpaceCartesian r) =
   if isVisible f
   then drawBar ctx (getWidth f.vps) (getHeight f.vps) r f.frameW f.frameH
                f.label (getColor f.vps)
   else pure unit
-parseVis ctx dec cs (Fill f) (Polar w) =
+parseVis ctx dec cs (Fill f) (SpacePolar w) =
   if isVisible f
   then drawWedge ctx (getWidth f.vps) (getHeight f.vps) w f.frameW f.frameH
                  f.label (getColor f.vps)
@@ -136,8 +136,8 @@ parseVis ctx dec cs (Fill f) (Polar w) =
 
 -- | Draw some visual indicator that part of a chart contains variability.
 drawVHint :: forall m. Context2D -> Color -> Space -> Eff (CEffects m) Unit
-drawVHint ctx col (Cartesian r) = drawHintRect ctx col r
-drawVHint ctx col (Polar w) = drawHintWedge ctx col w
+drawVHint ctx col (SpaceCartesian r) = drawHintRect ctx col r
+drawVHint ctx col (SpacePolar w) = drawHintWedge ctx col w
 
 -- | Determine the relative width a visualization component needs, which is
 -- | useful when we are dividing up the space for rendering.
@@ -183,7 +183,7 @@ splitBoxHT :: Rectangle -> Rectangle -> List Number -> List Space
 splitBoxHT _ _ Nil = Nil
 splitBoxHT (Rectangle orig) (Rectangle r) (v : vs) =
   let newW = v * orig.w
-  in Cartesian (Rectangle (r { w = newW })) :
+  in SpaceCartesian (Rectangle (r { w = newW })) :
        splitBoxHT (Rectangle orig)
                   (Rectangle (r { x = r.x + newW, w = r.w - newW } ))
                   vs
@@ -196,7 +196,7 @@ splitBoxVT :: Rectangle -> Rectangle -> List Number -> List Space
 splitBoxVT _ _ Nil = Nil
 splitBoxVT (Rectangle orig) (Rectangle r) (v : vs) =
   let newH = v * orig.h
-  in Cartesian (Rectangle (r { h = newH })) :
+  in SpaceCartesian (Rectangle (r { h = newH })) :
        splitBoxVT (Rectangle orig)
                   (Rectangle (r { y = r.y + newH, h = r.h - newH } ))
                   vs
@@ -207,7 +207,7 @@ splitWedgeHEven :: Wedge -> Int -> List Space
 splitWedgeHEven _ 0 = Nil
 splitWedgeHEven (Wedge w) i =
   let newA = ((w.endAngle - w.startAngle) / toNumber i) + w.startAngle
-  in Polar (Wedge (w { endAngle = newA })) :
+  in SpacePolar (Wedge (w { endAngle = newA })) :
        splitWedgeHEven (Wedge (w { startAngle = newA })) (i - 1)
 
 -- | Divide a wedge into unequal sub-spaces by angle such as for a pie chart.
@@ -217,7 +217,7 @@ splitWedgeHOdd w ls = split w ls (sum ls)
         split _ Nil _ = Nil
         split (Wedge w) (v : vs) t =
           let newAngle = (v / t) * (w.endAngle - w.startAngle) + w.startAngle
-          in Polar (Wedge (w { endAngle = newAngle })) :
+          in SpacePolar (Wedge (w { endAngle = newAngle })) :
                split (Wedge (w { startAngle = newAngle })) vs (t - v)
 
 -- | Divide a wedge into equal sub-spaces by radius
@@ -225,7 +225,7 @@ splitWedgeVEven :: Wedge -> Int -> List Space
 splitWedgeVEven _ 0 = Nil
 splitWedgeVEven (Wedge w) i =
   let newR = ((w.outRad - w.inRad) / toNumber i) + w.inRad
-  in Polar (Wedge (w { outRad = newR })) :
+  in SpacePolar (Wedge (w { outRad = newR })) :
        splitWedgeVEven (Wedge (w { inRad = newR })) (i - 1)
 
 splitWedgeVOdd :: Wedge -> List Number -> List Space
@@ -236,7 +236,7 @@ splitWedgeVOdd w ls = Nil
 
 -- | Convert some chunk of space to a Cartesian coordinate system
 toCartesian :: Space -> Space
-toCartesian (Polar w) = Cartesian (toRectangle w)
+toCartesian (SpacePolar w) = SpaceCartesian (toRectangle w)
 toCartesian s = s
 
 -- | Convert a wedge to a rectangle contained entirely within it
@@ -248,7 +248,7 @@ toRectangle (Wedge w) = Rectangle { x: w.x - w.outRad
                                   , h: w.outRad * 2.0
                                   }
 toPolar :: Space -> Space
-toPolar (Cartesian r) = Polar (toWedge r)
+toPolar (SpaceCartesian r) = SpacePolar (toWedge r)
 toPolar s = s
 
 toWedge :: Rectangle -> Wedge

@@ -122,7 +122,7 @@ v1 :: VVis Number
 v1 = NextTo $ fillsH vs1
 
 v2 :: VVis Number
-v2 = MkPolar v1
+v2 = Polar v1
 
 v3 :: VVis Number
 v3 = Above $ fillsW vs2
@@ -214,12 +214,12 @@ stk = NextTo $ stacks [(-1.0),(-2.0),3.0] [2.0,(-3.0),4.0]
 
 vpos1 :: VVis Number
 vpos1 =
-  let v = MkPolar $ NextTo $ fillsW (map One [8.5,6.3,7.3,6.3,3.9,9.7,7.5,9.6,7.9,9.6])
+  let v = Polar $ NextTo $ fillsW (map One [8.5,6.3,7.3,6.3,3.9,9.7,7.5,9.6,7.9,9.6])
   in v `color` defaultColors
 
 vpos2 :: VVis Number
 vpos2 =
-  let v = MkPolar $ NextTo $ fillsW (map One [6.6,1.3,5.5,1.5,8.1,5.0,7.1,6.4,7.3,8.8])
+  let v = Polar $ NextTo $ fillsW (map One [6.6,1.3,5.5,1.5,8.1,5.0,7.1,6.4,7.3,8.8])
   in v `color` defaultColors
 
 vpos1r :: VVis Number
@@ -255,7 +255,7 @@ piedet =
       x2 = V "Region 2" v2 right2
       x3 = V "Region 3" v3 right3
   in setFrames fh fw $
-       MkPolar $
+       Polar $
          NextTo $ cons x1 (cons x2 (singleton x3))
 
 karl :: VVis Number
@@ -267,10 +267,10 @@ threea :: VVis Number
 threea = v1
 
 threeb :: VVis Number
-threeb = above [v5 `color` defaultColors, MkPolar $ reorient v5 `color` defaultColors] `space` 0.1
+threeb = above [v5 `color` defaultColors, Polar $ reorient v5 `color` defaultColors] `space` 0.1
 
 threec :: VVis Number
-threec = MkPolar $ above [plain1 `color1` orange, vlp2 `color1` blue]
+threec = Polar $ above [plain1 `color1` orange, vlp2 `color1` blue]
 
 foura :: VVis Number
 foura = overlayFlat (v4 `color1` tblue) v5
@@ -286,14 +286,14 @@ fiveb = V "TxType" (overlayFlat (plain1log `color1` tblue) (plain1 `color1` gree
 
 fivech1 :: VVis Number
 fivech1 =
-  let v = MkPolar $ NextTo $ fillsW (map One [1.4, 0.7, 1.9, 1.2])
+  let v = Polar $ NextTo $ fillsW (map One [1.4, 0.7, 1.9, 1.2])
   in v `color` defaultColors
 
 fivech2 :: VVis Number
 fivech2 =
-  let v = MkPolar $ NextTo $ fillsW (map One [1.0, 2.1, 0.9])
+  let v = Polar $ NextTo $ fillsW (map One [1.0, 2.1, 0.9])
   in v `color` defaultColors
 
 
 fivec :: VVis Number
-fivec = V "Sorted" (MkPolar $ above [fivech1, fivech2]) (MkPolar $ above [vsort fivech1, vsort fivech2])
+fivec = V "Sorted" (Polar $ above [fivech1, fivech2]) (Polar $ above [vsort fivech1, vsort fivech2])

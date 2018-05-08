@@ -4,6 +4,7 @@ module Vis
   , color
   , color1
   , flop
+  , mapFill
   , removeCoord
   , reorient
   , rotate
@@ -48,8 +49,6 @@ module Vis
   , hspace
   , vspace
   , vPie
-
-
   ) where
 
 import Color (Color, white)
@@ -58,7 +57,6 @@ import Data.Array as A
 import Data.Foldable as F
 import Data.List (List(Nil), concatMap, filter, nub, partition, (:)) as L
 import Data.List.NonEmpty (NonEmptyList, cons, fromFoldable, fromList, head, singleton, sortBy, toList, zipWith) as NE
-
 import Data.Map (empty)
 import Data.Maybe (Maybe(..), fromJust, maybe)
 import Data.String (take)
@@ -68,7 +66,20 @@ import Partial.Unsafe (unsafePartial)
 import Prelude (class Show, comparing, flip, map, max, show, ($), (+), (-), (<), (<<<), (<>), (==), (||))
 import Util (doUnsafeListOp, intersperse, maximum, minimum, unsafeMaybe, unsafeNonEmpty, vmaximum, vminimum) as U
 import V (Decision, Dim, Dir(..), V(..), lookupDim, plainVals)
-import Vis.Types (Frame(..), Label(..), LabelPositionH(..), LabelPositionV(..), Orientation(..), VPs(..), VVis(..))
+import Vis.Types (Frame(..), Label(..), LabelPositionH(..), LabelPositionV(..), Orientation(..), VPs(..), VVis(..), FillRec)
+
+--------------------------------------------------------------------------------
+-- Generic traversals
+mapFill :: forall a b. (FillRec a -> FillRec b) -> VVis a -> VVis b
+mapFill f (Fill fr) = Fill $ f fr
+mapFill f (V d l r) = V d (mapFill f l) (mapFill f r)
+mapFill f (NextTo vs) = NextTo $ map (mapFill f) vs
+mapFill f (Above vs) = Above $ map (mapFill f) vs
+mapFill f (Cartesian v) = Cartesian $ mapFill f v
+mapFill f (Polar v) = Polar $ mapFill f v
+mapFill f (Overlay vs) = Overlay $ map (mapFill f) vs
+mapFill f (Stacked vs) = Stacked $ map (mapFill f) vs
+
 
 --------------------------------------------------------------------------------
 -- Transformations
@@ -82,8 +93,8 @@ reorient (Fill f) = Fill (f { vps = swapWH f.vps
 reorient (V d l r) = V d (reorient l) (reorient r)
 reorient (NextTo vs) = NextTo $ map reorient vs
 reorient (Above vs) = Above $ map reorient vs
-reorient (MkCartesian v) = MkCartesian (reorient v)
-reorient (MkPolar v) = MkPolar (reorient v)
+reorient (Cartesian v) = Cartesian (reorient v)
+reorient (Polar v) = Polar (reorient v)
 reorient (Overlay vs) = Overlay $ map reorient vs
 reorient (Stacked vs) = Stacked $ map reorient vs
 
@@ -101,8 +112,8 @@ flop (Fill f) = Fill f
 flop (V d l r) = V d (flop l) (flop r)
 flop (NextTo vs) = Above $ map flop vs
 flop (Above vs) = NextTo $ map flop vs
-flop (MkCartesian v) = MkCartesian (flop v)
-flop (MkPolar v) = MkPolar (flop v)
+flop (Cartesian v) = Cartesian (flop v)
+flop (Polar v) = Polar (flop v)
 flop (Overlay vs) = Overlay $ map flop vs
 flop (Stacked vs) = Stacked $ map flop vs
 
@@ -113,8 +124,8 @@ rotate = reorient <<< flop
 vsort :: VVis Number -> VVis Number
 vsort (NextTo vs) = NextTo $ NE.sortBy (comparing guessMain) vs
 vsort (Above vs) = Above $ NE.sortBy (comparing guessMain) vs
-vsort (MkPolar v) = MkPolar $ vsort v
-vsort (MkCartesian v) = MkCartesian $ vsort v
+vsort (Polar v) = Polar $ vsort v
+vsort (Cartesian v) = Cartesian $ vsort v
 vsort (V d l r) = V d (vsort l) (vsort r)
 vsort v = v
 
@@ -136,10 +147,10 @@ vZipWith f v1 v2 =
     vz :: (VPs -> VPs -> VPs) -> VVis Number -> VVis Number -> VVis Number
     vz f (NextTo vs1) (NextTo vs2) = NextTo $ zipFills f vs1 vs2
     vz f (Above vs1) (Above vs2) = Above $ zipFills f vs1 vs2
-    vz f (MkCartesian v1) v2 = MkCartesian (vz f v1 v2)
-    vz f v1 (MkCartesian v2) = MkCartesian (vz f v1 v2)
-    vz f (MkPolar v1) v2 = MkPolar (vz f v1 v2)
-    vz f v1 (MkPolar v2) = MkPolar (vz f v1 v2)
+    vz f (Cartesian v1) v2 = Cartesian (vz f v1 v2)
+    vz f v1 (Cartesian v2) = Cartesian (vz f v1 v2)
+    vz f (Polar v1) v2 = Polar (vz f v1 v2)
+    vz f v1 (Polar v2) = Polar (vz f v1 v2)
     vz f (V d1 l1 r1) (V d2 l2 r2) | d1 == d2 =
       V d1 (vz f l1 l2) (vz f r1 r2)
     vz f (V d l r) v = V d (vz f l v) (vz f r v)
@@ -170,8 +181,8 @@ fixLabels (Above vs) = Above $ map fixLabels vs
 fixLabels (Overlay vs) = Overlay $ map fixLabels vs
 fixLabels (Stacked vs) = Stacked $ map fixLabels vs
 fixLabels (V d l r) = V d (fixLabels l) (fixLabels r)
-fixLabels (MkCartesian v) = MkCartesian (fixLabels v)
-fixLabels (MkPolar v) = MkPolar (fixLabels v)
+fixLabels (Cartesian v) = Cartesian (fixLabels v)
+fixLabels (Polar v) = Polar (fixLabels v)
 
 minusHeight :: VPs -> VPs -> VPs
 minusHeight (VPs v1) (VPs v2) =
@@ -188,8 +199,8 @@ removeCoord (Fill f) = Fill f
 removeCoord (V d l r) = V d (removeCoord l) (removeCoord r)
 removeCoord (NextTo vs) = NextTo $ map removeCoord vs
 removeCoord (Above vs) = Above $ map removeCoord vs
-removeCoord (MkCartesian v) = removeCoord v
-removeCoord (MkPolar v) = removeCoord v
+removeCoord (Cartesian v) = removeCoord v
+removeCoord (Polar v) = removeCoord v
 removeCoord (Overlay vs) = Overlay $ map removeCoord vs
 removeCoord (Stacked vs) = Stacked $ map removeCoord vs
 
@@ -197,8 +208,8 @@ space :: VVis Number -> Number -> VVis Number
 space (NextTo vs) n = NextTo $ U.doUnsafeListOp (U.intersperse (hspace n)) vs
 space (Above vs) n = Above $ U.doUnsafeListOp (U.intersperse (vspace n)) vs
 space (V d l r) n = V d (space l n) (space r n)
-space (MkCartesian v) n = MkCartesian (space v n)
-space (MkPolar v) n = MkPolar (space v n)
+space (Cartesian v) n = Cartesian (space v n)
+space (Polar v) n = Polar (space v n)
 space (Overlay vs) n = Overlay $ U.doUnsafeListOp (U.intersperse (vspace n)) vs
 space (Stacked v) _ = Stacked v
 space (Fill v) _ = Fill v
@@ -225,8 +236,8 @@ color (Fill f) cs = let (VPs vps) = f.vps
 color (V d l r) cs = V d (color l cs) (color r cs)
 color (NextTo vs) cs = NextTo $ NE.zipWith color1 vs cs
 color (Above vs) cs = Above $ NE.zipWith color1 vs cs
-color (MkCartesian v) cs = MkCartesian (color v cs)
-color (MkPolar v) cs = MkPolar (color v cs)
+color (Cartesian v) cs = Cartesian (color v cs)
+color (Polar v) cs = Polar (color v cs)
 color (Overlay vs) cs = Overlay $ NE.zipWith color1 vs cs
 color (Stacked vs) cs = Stacked $ NE.zipWith color1 vs cs
 
@@ -236,8 +247,8 @@ color1 (Fill f) c = let (VPs vps) = f.vps
 color1 (V d l r) c = V d (color1 l c) (color1 r c)
 color1 (NextTo vs) c = NextTo $ map (flip color1 c) vs
 color1 (Above vs) c = Above $ map (flip color1 c) vs
-color1 (MkCartesian v) c = MkCartesian (color1 v c)
-color1 (MkPolar v) c = MkPolar (color1 v c)
+color1 (Cartesian v) c = Cartesian (color1 v c)
+color1 (Polar v) c = Polar (color1 v c)
 color1 (Overlay vs) c = Overlay $ map (flip color1 c) vs
 color1 (Stacked vs) c = Stacked $ map (flip color1 c) vs
 
@@ -258,8 +269,8 @@ selectVis dec (V d l r) = case lookupDim d dec of
   Nothing -> V d (selectVis dec l) (selectVis dec r)
 selectVis dec (NextTo vs) = NextTo $ map (selectVis dec) vs
 selectVis dec (Above vs) = Above $ map (selectVis dec) vs
-selectVis dec (MkCartesian v) = MkCartesian (selectVis dec v)
-selectVis dec (MkPolar v) = MkPolar (selectVis dec v)
+selectVis dec (Cartesian v) = Cartesian (selectVis dec v)
+selectVis dec (Polar v) = Polar (selectVis dec v)
 selectVis dec (Overlay vs) = Overlay $ map (selectVis dec) vs
 selectVis dec (Stacked vs) = Stacked $ map (selectVis dec) vs
 
@@ -276,8 +287,8 @@ visDims = L.nub <<< visDimsHelp where
   visDimsHelp (V d l r) = d L.: (visDimsHelp l <> visDimsHelp r)
   visDimsHelp (NextTo vs) = L.concatMap visDimsHelp (NE.toList vs)
   visDimsHelp (Above vs) = L.concatMap visDimsHelp (NE.toList vs)
-  visDimsHelp (MkCartesian v) = visDimsHelp v
-  visDimsHelp (MkPolar v) = visDimsHelp v
+  visDimsHelp (Cartesian v) = visDimsHelp v
+  visDimsHelp (Polar v) = visDimsHelp v
   visDimsHelp (Overlay vs) = L.concatMap visDimsHelp (NE.toList vs)
   visDimsHelp (Stacked vs) = L.concatMap visDimsHelp (NE.toList vs)
 
@@ -322,8 +333,8 @@ visOrientation (Fill f) = getOrientation f.vps
 visOrientation (V _ l _) = visOrientation l
 visOrientation (NextTo vs) = visOrientation (NE.head vs)
 visOrientation (Above vs) = visOrientation (NE.head vs)
-visOrientation (MkCartesian v) = visOrientation v
-visOrientation (MkPolar v) = visOrientation v
+visOrientation (Cartesian v) = visOrientation v
+visOrientation (Polar v) = visOrientation v
 visOrientation (Overlay vs) = visOrientation (NE.head vs)
 visOrientation (Stacked vs) = visOrientation (NE.head vs)
 
@@ -333,8 +344,8 @@ visMaxH (Fill f) = getHeight f.vps
 visMaxH (V d l r) = max (visMaxH l) (visMaxH r)
 visMaxH (NextTo vs) = U.maximum (map visMaxH vs)
 visMaxH (Above vs) = U.maximum (map visMaxH vs)
-visMaxH (MkCartesian v) = visMaxH v
-visMaxH (MkPolar v) = visMaxH v
+visMaxH (Cartesian v) = visMaxH v
+visMaxH (Polar v) = visMaxH v
 visMaxH (Overlay vs) = U.maximum (map visMaxH vs)
 visMaxH (Stacked vs) = case visOrientation (NE.head vs) of
   Vertical -> F.foldr (+) 0.0 (map visMaxH vs)
@@ -345,8 +356,8 @@ visMinH (Fill f) = getHeight f.vps
 visMinH (V d l r) = min (visMinH l) (visMinH r)
 visMinH (NextTo vs) = U.minimum (map visMinH vs)
 visMinH (Above vs) = U.minimum (map visMinH vs)
-visMinH (MkCartesian v) = visMinH v
-visMinH (MkPolar v) = visMinH v
+visMinH (Cartesian v) = visMinH v
+visMinH (Polar v) = visMinH v
 visMinH (Overlay vs) = U.minimum (map visMinH vs)
 visMinH (Stacked vs) = case visOrientation (NE.head vs) of
   Vertical -> F.foldr (+) 0.0 (map visMinH vs)
@@ -357,8 +368,8 @@ visMaxW (Fill f) = getWidth f.vps
 visMaxW (V d l r) = max (visMaxW l) (visMaxW r)
 visMaxW (NextTo vs) = U.maximum (map visMaxW vs)
 visMaxW (Above vs) = U.maximum (map visMaxW vs)
-visMaxW (MkCartesian v) = visMaxW v
-visMaxW (MkPolar v) = visMaxW v
+visMaxW (Cartesian v) = visMaxW v
+visMaxW (Polar v) = visMaxW v
 visMaxW (Overlay vs) = U.maximum (map visMaxW vs)
 visMaxW (Stacked vs) = case visOrientation (NE.head vs) of
   Horizontal -> F.foldr (+) 0.0 (map visMaxW vs)
@@ -369,8 +380,8 @@ visMinW (Fill f) = getWidth f.vps
 visMinW (V d l r) = min (visMinW l) (visMinW r)
 visMinW (NextTo vs) = U.minimum (map visMinW vs)
 visMinW (Above vs) = U.minimum (map visMinW vs)
-visMinW (MkCartesian v) = visMinW v
-visMinW (MkPolar v) = visMinW v
+visMinW (Cartesian v) = visMinW v
+visMinW (Polar v) = visMinW v
 visMinW (Overlay vs) = U.minimum (map visMinW vs)
 visMinW (Stacked vs) = case visOrientation (NE.head vs) of
   Horizontal -> F.foldr (+) 0.0 (map visMinW vs)
@@ -425,7 +436,7 @@ vPie xs =
       fh = Frame { frameMin: 0.0, frameMax: 1.0 }
       fw = Frame { frameMin: min 0.0 mn, frameMax: max 0.0 mx}
       fs = map (fillsWA fh fw) xs
-  in MkPolar $ NextTo $ U.unsafeMaybe (NE.fromFoldable fs)
+  in Polar $ NextTo $ U.unsafeMaybe (NE.fromFoldable fs)
 
 setW :: Number -> V Number -> V (Tuple Number Number)
 setW w (Chc d l r) = Chc d (setW w l) (setW w r)
@@ -549,8 +560,8 @@ setFrames fh fw (Fill f) = Fill (f { frameH = fh, frameW = fw })
 setFrames fh fw (V d l r) = V d (setFrames fh fw l) (setFrames fh fw r)
 setFrames fh fw (NextTo vs) = NextTo $ map (setFrames fh fw) vs
 setFrames fh fw (Above vs) = Above $ map (setFrames fh fw) vs
-setFrames fh fw (MkCartesian v) = MkCartesian (setFrames fh fw v)
-setFrames fh fw (MkPolar v) = MkPolar (setFrames fh fw v)
+setFrames fh fw (Cartesian v) = Cartesian (setFrames fh fw v)
+setFrames fh fw (Polar v) = Polar (setFrames fh fw v)
 setFrames fh fw (Overlay vs) = Overlay $ map (setFrames fh fw) vs
 setFrames fh fw (Stacked vs) = Stacked $ map (setFrames fh fw) vs
 
@@ -559,10 +570,10 @@ doStack x (Stacked vs) = Stacked $ NE.cons x vs
 doStack (V d1 l1 r1) (V d2 l2 r2) | d1 == d2 = V d1 (stack l1 r2) (stack r1 r2)
 doStack (V d l r) v = V d (stack l v) (stack r v)
 doStack v (V d l r) = V d (stack l v) (stack r v)
-doStack (MkPolar x) y = MkPolar $ stack x y
-doStack (MkCartesian x) y = MkCartesian $ stack x y
-doStack x (MkPolar y) = MkPolar $ stack x y
-doStack x (MkCartesian y) = MkCartesian $ stack x y
+doStack (Polar x) y = Polar $ stack x y
+doStack (Cartesian x) y = Cartesian $ stack x y
+doStack x (Polar y) = Polar $ stack x y
+doStack x (Cartesian y) = Cartesian $ stack x y
 doStack x y = Stacked $ NE.cons x (NE.singleton y)
 
 stack :: VVis Number -> VVis Number -> VVis Number

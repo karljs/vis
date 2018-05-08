@@ -1,5 +1,6 @@
 module Vis.Types
-  ( Frame(..)
+  ( FillRec
+  , Frame(..)
   , Label(..)
   , LabelPositionH(..)
   , LabelPositionV(..)
@@ -18,18 +19,21 @@ import V (Dim)
 
 -- | The primary type of a visualization
 data VVis a
-  = Fill { vps :: VPs
-         , frameH :: Frame a
-         , frameW :: Frame a
-         , label :: Maybe Label
-         }
+  = Fill (FillRec a)
   | V Dim (VVis a) (VVis a)
   | NextTo (NonEmptyList (VVis a))
   | Above (NonEmptyList (VVis a))
-  | MkCartesian (VVis a)
-  | MkPolar (VVis a)
+  | Cartesian (VVis a)
+  | Polar (VVis a)
   | Overlay (NonEmptyList (VVis a))
   | Stacked (NonEmptyList (VVis a))
+
+type FillRec a =
+  { vps :: VPs
+  , frameH :: Frame a
+  , frameW :: Frame a
+  , label :: Maybe Label
+  }
 
 instance showVVis :: Show a => Show (VVis a) where
   show (Fill f) = "Fill " <> show f.vps <> " "
@@ -41,8 +45,8 @@ instance showVVis :: Show a => Show (VVis a) where
     "NextTo\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
   show (Above vs) =
     "Above\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
-  show (MkCartesian v) = "Cartesian\n" <> show v
-  show (MkPolar v) = "Polar\n" <> show v
+  show (Cartesian v) = "Cartesian\n" <> show v
+  show (Polar v) = "Polar\n" <> show v
   show (Overlay vs) =
     "Overlay\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
   show (Stacked vs) =
