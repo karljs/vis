@@ -390,6 +390,9 @@ visMinW (Stacked v) = case visOrientation (NE.head v.vs) of
 --------------------------------------------------------------------------------
 -- Helper functions for (mostly unsafely) constructing nonempty lists of things
 
+-- barchart :: NE.NonEmptyList (VVis Number)
+-- barchart = NextTo <<< fillsH
+
 -- | Create fill objects for an array of variational numbers where the data is
 -- | bound to the height
 fillsH :: Array (V Number) -> NE.NonEmptyList (VVis Number)
@@ -487,16 +490,14 @@ genFill fh fw o (One (Tuple w h)) =
 genFill fh fw o (Chc d l r) = V d (genFill fh fw o l) (genFill fh fw o r)
 
 hspace :: Number -> VVis Number
-hspace v = spaceFill (Just v) Nothing Horizontal
+hspace v = spaceFill v 1.0 Horizontal
 
 vspace :: Number -> VVis Number
-vspace v = spaceFill Nothing (Just v) Vertical
+vspace v = spaceFill 1.0 v Vertical
 
-spaceFill :: Maybe Number -> Maybe Number -> Orientation -> VVis Number
-spaceFill mw mh o =
-  let w = U.maybe1 mw
-      h = U.maybe1 mh
-      vp = VPs { height: h
+spaceFill :: Number -> Number -> Orientation -> VVis Number
+spaceFill w h o =
+  let vp = VPs { height: h
                , width: w
                , color: white
                , visible: false
