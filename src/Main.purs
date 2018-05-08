@@ -75,14 +75,13 @@ main = HA.runHalogenAff do
 
 -- | When run as an executable with `main` as the entry point, this is the
 -- | visualization that will be rendered.  It's just for convenience.
-defaultVis :: VVis Number
+defaultVis :: VVis
 defaultVis = v1
 
 -- | Kind of like `main`, except it does the extra step of deleting all child
 -- | HTML nodes from the body.  This is useful when running from a REPL.
 go ::
-  VVis Number ->
-  Eff (HA.HalogenEffects (canvas :: CANVAS, console :: CONSOLE)) Unit
+  VVis -> Eff (HA.HalogenEffects (canvas :: CANVAS, console :: CONSOLE)) Unit
 go vis = HA.runHalogenAff do
   body <- HA.awaitBody
   let nb = htmlElementToNode body
@@ -118,22 +117,22 @@ vs4 = [ One 0.4, One 0.8, One 1.2, One 1.6, One 2.0]
 vs5 :: Array (V Number)
 vs5 = [ One 0.3, One 0.4, One 1.0, One 2.1, One 1.0]
 
-v1 :: VVis Number
+v1 :: VVis
 v1 = NextTo $ fillsH vs1
 
-v2 :: VVis Number
+v2 :: VVis
 v2 = Polar v1
 
-v3 :: VVis Number
+v3 :: VVis
 v3 = Above $ fillsW vs2
 
-k :: VVis Number
+k :: VVis
 k = NextTo $ fillsH vs3
 
-v4 :: VVis Number
+v4 :: VVis
 v4 = NextTo $ fillsH vs4
 
-v5 :: VVis Number
+v5 :: VVis
 v5 = NextTo $ fillsH vs5
 
 tblue :: Color
@@ -144,19 +143,19 @@ tgreen :: Color
 tgreen = let b = toRGBA green
          in rgba b.r b.g b.b 0.5
 
-overTest :: VVis Number
+overTest :: VVis
 overTest =
   overlayFlat
     (v4 `space` 0.25 `rightSpace` 0.02 `color1` tgreen)
     (v5 `space` 0.25 `leftSpace` 0.02)
 
-plain1 :: VVis Number
+plain1 :: VVis
 plain1 = NextTo $ fillsH vs3
 
-plain1log :: VVis Number
+plain1log :: VVis
 plain1log = NextTo $ fillsH vs3log
 
-plain1sqrt :: VVis Number
+plain1sqrt :: VVis
 plain1sqrt = NextTo $ fillsH vs3sqrt
 
 vs3s :: Array (V Number)
@@ -170,16 +169,16 @@ ps2s :: Array (V Number)
 ps2s = map One $ sort [ 4.1, (-1.0), 2.0, 2.3, (-1.2), 1.3,  3.4,  4.2, 0.8, 2.9 ]
 
 
-plain2 :: VVis Number
+plain2 :: VVis
 plain2 = NextTo $ fillsH ps2
 
-plain1s :: VVis Number
+plain1s :: VVis
 plain1s = NextTo $ fillsH vs3s
 
-plain2s :: VVis Number
+plain2s :: VVis
 plain2s = NextTo $ fillsH ps2s
 
-hyb1 :: VVis Number
+hyb1 :: VVis
 hyb1 = V "Sorted" (above [plain1, plain2 `color1` blue])
                   (overlayFlat (plain1s `color1` tgreen) (plain2s `color1` blue))
 
@@ -192,47 +191,47 @@ lp2 = map One $ map recip [ 4.1, (-1.0), 2.0, 2.3, (-1.2), 1.3,  3.4,  4.2, 0.8,
 lp2s :: Array (V Number)
 lp2s = map One $ sort $ map recip [ 4.1, (-1.0), 2.0, 2.3, (-1.2), 1.3,  3.4,  4.2, 0.8, 2.9 ]
 
-vlp2 :: VVis Number
+vlp2 :: VVis
 vlp2 = NextTo $ fillsH lp2
 
-vlp2s :: VVis Number
+vlp2s :: VVis
 vlp2s = NextTo $ fillsH lp2s
 
-hyb2 :: VVis Number
+hyb2 :: VVis
 hyb2 = above [ nextTo [plain2, vlp2] `space` 0.2
              , nextTo [plain2s, vlp2s] `space` 0.2]
 
 -- hyb2 = V "Sorted" (V "Log" (plain2) (vlp2)) (V "Log" (plain2s) (vlp2s))
 
-hyb3 :: VVis Number
+hyb3 :: VVis
 hyb3 = V "TxType" (overlayFlat (plain1 `color1` tgreen) (plain1log)) (overlayFlat (plain1 `color1` tgreen) (plain1sqrt))
 
 
 
-stk :: VVis Number
+stk :: VVis
 stk = NextTo $ stacks [(-1.0),(-2.0),3.0] [2.0,(-3.0),4.0]
 
-vpos1 :: VVis Number
+vpos1 :: VVis
 vpos1 =
   let v = Polar $ NextTo $ fillsW (map One [8.5,6.3,7.3,6.3,3.9,9.7,7.5,9.6,7.9,9.6])
   in v `color` defaultColors
 
-vpos2 :: VVis Number
+vpos2 :: VVis
 vpos2 =
   let v = Polar $ NextTo $ fillsW (map One [6.6,1.3,5.5,1.5,8.1,5.0,7.1,6.4,7.3,8.8])
   in v `color` defaultColors
 
-vpos1r :: VVis Number
+vpos1r :: VVis
 vpos1r =
   let v = NextTo $ fillsH (map One [8.5,6.3,7.3,6.3,3.9,9.7,7.5,9.6,7.9,9.6])
   in v `color` defaultColors
 
-vpos2r :: VVis Number
+vpos2r :: VVis
 vpos2r =
   let v = NextTo $ fillsH (map One [6.6,1.3,5.5,1.5,8.1,5.0,7.1,6.4,7.3,8.8])
   in v `color` defaultColors
 
-piedet :: VVis Number
+piedet :: VVis
 piedet =
   let fh  = Frame {frameMin: 0.0, frameMax: 1.0}
       fw  = Frame {frameMin: 0.0, frameMax: 3.0}
@@ -258,42 +257,42 @@ piedet =
        Polar $
          NextTo $ cons x1 (cons x2 (singleton x3))
 
-karl :: VVis Number
+karl :: VVis
 karl = vPie [ Chc "Region 1" (One [3.0]) (One [1.9, 0.7, 0.4])
             , Chc "Region 2" (One [2.0]) (One [1.0, 0.4, 0.6])
             , Chc "Region 3" (One [0.8]) (One [0.2, 0.3, 0.3])]
 
-threea :: VVis Number
+threea :: VVis
 threea = v1
 
-threeb :: VVis Number
+threeb :: VVis
 threeb = above [v5 `color` defaultColors, Polar $ reorient v5 `color` defaultColors] `space` 0.1
 
-threec :: VVis Number
+threec :: VVis
 threec = Polar $ above [plain1 `color1` orange, vlp2 `color1` blue]
 
-foura :: VVis Number
+foura :: VVis
 foura = overlayFlat (v4 `color1` tblue) v5
 
-fourb :: VVis Number
+fourb :: VVis
 fourb = overTest
 
-fivea :: VVis Number
+fivea :: VVis
 fivea = nextTo [above [vpos1r, vpos2r] `space` 0.2, vZipWith minusHeight vpos1r vpos2r] `space` 0.2
 
-fiveb :: VVis Number
+fiveb :: VVis
 fiveb = V "TxType" (overlayFlat (plain1log `color1` tblue) (plain1 `color1` green)) (overlayFlat (plain1sqrt `color1` tblue) (plain1 `color1` green))
 
-fivech1 :: VVis Number
+fivech1 :: VVis
 fivech1 =
   let v = Polar $ NextTo $ fillsW (map One [1.4, 0.7, 1.9, 1.2])
   in v `color` defaultColors
 
-fivech2 :: VVis Number
+fivech2 :: VVis
 fivech2 =
   let v = Polar $ NextTo $ fillsW (map One [1.0, 2.1, 0.9])
   in v `color` defaultColors
 
 
-fivec :: VVis Number
+fivec :: VVis
 fivec = V "Sorted" (Polar $ above [fivech1, fivech2]) (Polar $ above [vsort fivech1, vsort fivech2])

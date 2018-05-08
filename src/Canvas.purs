@@ -30,7 +30,7 @@ import Vis (VVis)
 
 -- | The main canvas parent component which represents the bulk of the application.
 cComponent :: forall m.
-  H.Component HH.HTML CQuery (CInput Number) Void (Aff (CEffects m))
+  H.Component HH.HTML CQuery CInput Void (Aff (CEffects m))
 cComponent =
   H.lifecycleParentComponent
     { initialState: initialState
@@ -41,12 +41,12 @@ cComponent =
     , finalizer: Nothing
     }
   where
-  initialState :: VVis Number -> CState Number
+  initialState :: VVis -> CState
   initialState v  =
     { currVis: v
     }
 
-  render :: CState Number -> H.ParentHTML CQuery UIQuery UISlot (Aff (CEffects m))
+  render :: CState -> H.ParentHTML CQuery UIQuery UISlot (Aff (CEffects m))
   render state =
     HH.div
       [ HP.id_ "container"
@@ -62,7 +62,7 @@ cComponent =
 
   eval ::
     CQuery ~>
-      H.ParentDSL (CState Number) CQuery UIQuery UISlot Void (Aff (CEffects m))
+      H.ParentDSL CState CQuery UIQuery UISlot Void (Aff (CEffects m))
   eval = case _ of
     Render next -> do
       mtup <- H.query UISlot $ H.request ViewDec
@@ -90,7 +90,7 @@ renderVis :: forall m.
   CanvasElement ->
   Decision ->
   DecisionColors ->
-  VVis Number ->
+  VVis ->
   Eff (CEffects m) Context2D
 renderVis can dec cs vis = do
   w <- C.getCanvasWidth can
@@ -111,7 +111,7 @@ renderVisInit :: forall m.
   CanvasElement ->
   Decision ->
   DecisionColors ->
-  VVis Number ->
+  VVis ->
   Eff (CEffects m) Context2D
 renderVisInit can dec col vis = do
   win <- window

@@ -21,7 +21,7 @@ import VisColor (makeDimColors)
 
 -- | The main UI child component which generates an interface for working with
 -- | the view decision.
-uiComponent :: forall a m. H.Component HH.HTML UIQuery (UIInput a) UIMessage m
+uiComponent :: forall m. H.Component HH.HTML UIQuery UIInput UIMessage m
 uiComponent =
   H.component
     { initialState: initialState
@@ -31,14 +31,14 @@ uiComponent =
     }
   where
 
-  initialState :: VVis a -> UIState a
+  initialState :: VVis -> UIState
   initialState v =
     { viewDec: visInitDec v
     , vis: v
     , dimColors: assignColors v
     }
 
-  render :: UIState a -> H.ComponentHTML UIQuery
+  render :: UIState -> H.ComponentHTML UIQuery
   render state =
     HH.div
         [ HP.id_ "dims"
@@ -52,7 +52,7 @@ uiComponent =
         -- , HH.text (showDec state.viewDec)
         ]
 
-  eval :: UIQuery ~> H.ComponentDSL (UIState a) UIQuery UIMessage m
+  eval :: UIQuery ~> H.ComponentDSL (UIState) UIQuery UIMessage m
   eval = case _ of
     ToggleL dim next -> do
       state <- H.get
@@ -78,7 +78,7 @@ uiComponent =
 
 -- | A UI component helper that generates a checkbox and, if it's checked, radio
 -- | buttons for a particular dimension.
-dimBox :: forall a. UIState a -> Dim -> H.ComponentHTML UIQuery
+dimBox :: forall a. UIState -> Dim -> H.ComponentHTML UIQuery
 dimBox st d =
   let col = case lookup d st.dimColors of
             Just c -> c
@@ -122,11 +122,11 @@ radios d dir =
 -- Helper functions for implementing the UI component
 
 -- | Set a particular dimension direction in the state of the UI component.
-setViewDec :: forall a. Dir -> Dim -> UIState a -> UIState a
+setViewDec :: forall a. Dir -> Dim -> UIState -> UIState
 setViewDec dir dim st = st { viewDec = insert dim dir st.viewDec }
 
 -- | Toggle, i.e. add or remove a dimension from the state of the UI.
-toggleViewDec :: forall a. Dim -> UIState a -> UIState a
+toggleViewDec :: forall a. Dim -> UIState -> UIState
 toggleViewDec dim st = if member dim st.viewDec
                        then st { viewDec = delete dim st.viewDec }
                        else st { viewDec = insert dim L st.viewDec }
@@ -165,7 +165,7 @@ inputStyle = do
   marginRight (px 5.0)
 
 -- | Create a color mapping for the dimensions in a particular visualization
-assignColors :: forall a. VVis a -> DecisionColors
+assignColors :: VVis -> DecisionColors
 assignColors vis =
   let ds = visDims vis
       cs = makeDimColors (length ds)

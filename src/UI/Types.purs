@@ -19,10 +19,10 @@ import Vis (VVis)
 
 -- | The state for the child UI component, which tracks the view decision for
 -- | a variational visualization.
-type UIState a = { viewDec :: Decision
-                 , vis :: VVis a
-                 , dimColors :: DecisionColors
-                 }
+type UIState = { viewDec :: Decision
+               , vis :: VVis
+               , dimColors :: DecisionColors
+               }
 
 -- | The query algebra for the UI component.  It supports toggling a dimension
 -- | in the view decision and querying the view decision.
@@ -34,7 +34,7 @@ data UIQuery a
 
 -- | The input to the UI component is just a visualization, from which we
 -- | can extract a default view decision.
-type UIInput a = VVis a
+type UIInput = VVis
 
 -- | When a change is made to the view decision, send a message with the new
 -- | decision and the decision colors.

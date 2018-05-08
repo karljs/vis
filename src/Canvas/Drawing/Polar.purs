@@ -22,8 +22,8 @@ drawWedge :: forall m.
   Number ->
   Number ->
   Wedge ->
-  Frame Number ->
-  Frame Number ->
+  Frame ->
+  Frame ->
   Maybe Label ->
   Color ->
   Eff (CEffects m) Unit
@@ -53,7 +53,7 @@ drawWedge ctx w h (Wedge wedg') (Frame fw) (Frame fh) ml col = do
 
 drawStackedWedges :: forall m.
   Context2D ->
-  List (VVis Number) ->
+  List (VVis) ->
   Wedge ->
   Eff (CEffects m) Unit
 drawStackedWedges ctx (Fill v : vs) (Wedge w) = do
@@ -70,7 +70,7 @@ drawStackedWedges _ _ _ = pure unit
 
 drawStackedPos :: forall m.
   Context2D ->
-  List (VVis Number) ->
+  List (VVis) ->
   Wedge ->
   Number ->
   Number ->
@@ -97,7 +97,7 @@ drawStackedPos _ _ _ _ _ = pure unit
 
 drawStackedNeg :: forall m.
   Context2D ->
-  List (VVis Number) ->
+  List (VVis) ->
   Wedge ->
   Number ->
   Number ->

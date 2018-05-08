@@ -13,7 +13,7 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Graphics.Canvas (Context2D, TextAlign(..), fillRect, fillText, setFillStyle, setFont, setLineDash, setLineWidth, setStrokeStyle, setTextAlign, strokeRect, strokeText)
 import Prelude (Unit, discard, pure, show, unit, (&&), (+), (-), (/), (<), (<>), (>=))
-import Util (convertRange, maybe1)
+import Util (convertRange)
 import Vis (VPs(VPs), VVis(Fill), getColor, getHeight, getOrientation, getWidth, splitPosNeg)
 import Vis.Types (Frame(..), Label(..), Orientation(..), VVis)
 
@@ -22,8 +22,8 @@ drawBar :: forall m.
   Number ->
   Number ->
   Rectangle ->
-  Frame Number ->
-  Frame Number ->
+  Frame ->
+  Frame ->
   Maybe Label ->
   Color ->
   Eff (CEffects m) Unit
@@ -53,7 +53,7 @@ drawBar ctx w h (Rectangle r) (Frame fw) (Frame fh) ml col = do
 
 drawStackedBars :: forall m.
   Context2D ->
-  List (VVis Number) ->
+  List (VVis) ->
   Rectangle ->
   Eff (CEffects m) Unit
 drawStackedBars ctx ((Fill v) : vs) (Rectangle r) = do
@@ -72,7 +72,7 @@ drawStackedBars _ _ _ = pure unit
 
 drawStackedPos :: forall m.
   Context2D ->
-  List (VVis Number) ->
+  List (VVis) ->
   Rectangle ->
   Number -> Number ->
   Number -> Number ->
@@ -102,7 +102,7 @@ drawStackedPos _ _ _ _ _ _ _ = pure unit
 
 drawStackedNeg :: forall m.
   Context2D ->
-  List (VVis Number) ->
+  List VVis ->
   Rectangle ->
   Number -> Number ->
   Number -> Number ->

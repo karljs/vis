@@ -44,7 +44,7 @@ parseVisV :: forall m.
   Context2D ->
   Decision ->
   DecisionColors ->
-  VVis Number ->
+  VVis ->
   Rectangle ->
   Eff (CEffects m) Unit
 parseVisV ctx dec cs v r = do
@@ -57,7 +57,7 @@ smallMult :: forall m.
   Context2D ->
   Decision ->
   DecisionColors ->
-  VVis Number ->
+  VVis ->
   Rectangle ->
   Eff (CEffects m) Unit
 smallMult Nil ctx dec cs v r = do
@@ -82,7 +82,7 @@ parseVis :: forall m.
   Context2D ->
   Decision ->
   DecisionColors ->
-  VVis Number ->
+  VVis ->
   Space ->
   Eff (CEffects m) Unit
 parseVis ctx dec cs (NextTo vs) (SpaceCartesian r) = do
@@ -141,7 +141,7 @@ drawVHint ctx col (SpacePolar w) = drawHintWedge ctx col w
 
 -- | Determine the relative width a visualization component needs, which is
 -- | useful when we are dividing up the space for rendering.
-relativeWidth :: Decision -> VVis Number -> Number
+relativeWidth :: Decision -> VVis -> Number
 relativeWidth _ (Fill f) =
   let (VPs vps) = f.vps
   in abs vps.width
@@ -153,14 +153,14 @@ relativeWidth dec (V d l r) =
 relativeWidth _ (NextTo vs) = widthIfHorizontal (toList vs)
 relativeWidth _ _ = 1.0
 
-widthIfHorizontal :: List (VVis Number) -> Number
+widthIfHorizontal :: List VVis -> Number
 widthIfHorizontal Nil = 0.0
 widthIfHorizontal (Fill f : vs) = case getOrientation f.vps of
   Vertical -> 1.0
   Horizontal -> getWidth f.vps + widthIfHorizontal vs
 widthIfHorizontal _ = 1.0
 
-relativeHeight :: Decision -> VVis Number -> Number
+relativeHeight :: Decision -> VVis -> Number
 relativeHeight _ (Fill f) =
   let (VPs vps) = f.vps
   in abs vps.height

@@ -78,8 +78,7 @@ type CEffects eff = (canvas :: CANVAS, dom :: DOM, console :: CONSOLE | eff)
 
 -- | The state for the canvas component, which is currently just a variational
 -- | visualization.  The view decision comes from querying the child UI.
-type CState a = { currVis :: VVis a
-                }
+type CState = { currVis :: VVis }
 
 -- | The query algebra for the canvas component.  The only thing it knows how
 -- | to deal with is a request to render, which is issued at initialization.
@@ -89,7 +88,7 @@ data CQuery a
 
 -- | The input to the canvas component, which is the visualization to be
 -- | rendered.
-type CInput a = VVis a
+type CInput = VVis
 
 -- | A type for the child component of the canvas component, which is the UI
 -- | which allows the view decision to be set.

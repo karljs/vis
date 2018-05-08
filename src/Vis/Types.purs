@@ -18,24 +18,24 @@ import Prelude (map, (<>))
 import V (Dim)
 
 -- | The primary type of a visualization
-data VVis a
-  = Fill (FillRec a)
-  | V Dim (VVis a) (VVis a)
-  | NextTo (NonEmptyList (VVis a))
-  | Above (NonEmptyList (VVis a))
-  | Cartesian (VVis a)
-  | Polar (VVis a)
-  | Overlay (NonEmptyList (VVis a))
-  | Stacked (NonEmptyList (VVis a))
+data VVis
+  = Fill FillRec
+  | V Dim VVis VVis
+  | NextTo (NonEmptyList VVis)
+  | Above (NonEmptyList VVis)
+  | Cartesian VVis
+  | Polar VVis
+  | Overlay (NonEmptyList VVis)
+  | Stacked (NonEmptyList VVis)
 
-type FillRec a =
+type FillRec =
   { vps :: VPs
-  , frameH :: Frame a
-  , frameW :: Frame a
+  , frameH :: Frame
+  , frameW :: Frame
   , label :: Maybe Label
   }
 
-instance showVVis :: Show a => Show (VVis a) where
+instance showVVis :: Show VVis where
   show (Fill f) = "Fill " <> show f.vps <> " "
                           <> "H: " <> show f.frameH <> " "
                           <> "W: " <> show f.frameW <> " "
@@ -65,12 +65,12 @@ instance showVPs :: Show VPs where
 
 -- | A frame represents the context into which we map the values being charted.
 -- | Currently this just tracks the minimum and maximum values in a chart.
-data Frame a = Frame
-  { frameMax :: a
-  , frameMin :: a
+data Frame = Frame
+  { frameMax :: Number
+  , frameMin :: Number
   }
 
-instance showFrame :: Show a => Show (Frame a) where
+instance showFrame :: Show Frame where
   show (Frame f) = show f.frameMin <> "--" <> show f.frameMax
 
 data Orientation = Vertical | Horizontal
