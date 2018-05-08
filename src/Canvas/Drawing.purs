@@ -85,27 +85,27 @@ parseVis :: forall m.
   VVis Number ->
   Space ->
   Eff (CEffects m) Unit
-parseVis ctx dec cs (NextTo v) (Cartesian r) = do
-  let bs = splitBoxH r (toList $ map (relativeWidth dec) v.vs)
-  sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) bs
-parseVis ctx dec cs (NextTo v) (Polar w) = do
-  let ws = splitWedgeHOdd w (toList $ map (relativeWidth dec) v.vs)
-  sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) ws
+parseVis ctx dec cs (NextTo vs) (Cartesian r) = do
+  let bs = splitBoxH r (toList $ map (relativeWidth dec) vs)
+  sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) bs
+parseVis ctx dec cs (NextTo vs) (Polar w) = do
+  let ws = splitWedgeHOdd w (toList $ map (relativeWidth dec) vs)
+  sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) ws
 
-parseVis ctx dec cs (Above v) (Cartesian r) = do
-  let bs = splitBoxV r (toList $ map (relativeHeight dec) v.vs)
-  sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) bs
-parseVis ctx dec cs (Above v) (Polar w) = do
-  let ws = splitWedgeVEven w (length v.vs)
-  sequence_ $ zipWith (parseVis ctx dec cs) (toList v.vs) ws
+parseVis ctx dec cs (Above vs) (Cartesian r) = do
+  let bs = splitBoxV r (toList $ map (relativeHeight dec) vs)
+  sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) bs
+parseVis ctx dec cs (Above vs) (Polar w) = do
+  let ws = splitWedgeVEven w (length vs)
+  sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) ws
 
-parseVis ctx dec cs (Overlay v) sp = do
-  sequence_ $ map (\vis -> parseVis ctx dec cs vis sp) (reverse v.vs)
+parseVis ctx dec cs (Overlay vs) sp = do
+  sequence_ $ map (\vis -> parseVis ctx dec cs vis sp) (reverse vs)
 
-parseVis ctx dec cs (Stacked v) (Cartesian r) = do
-  drawStackedBars ctx (toList v.vs) r
-parseVis ctx dec cs (Stacked v) (Polar w) = do
-  drawStackedWedges ctx (toList v.vs) w
+parseVis ctx dec cs (Stacked vs) (Cartesian r) = do
+  drawStackedBars ctx (toList vs) r
+parseVis ctx dec cs (Stacked vs) (Polar w) = do
+  drawStackedWedges ctx (toList vs) w
 
 parseVis ctx dec cs (V d l r) sp = do
   case lookupDim d dec of
@@ -150,7 +150,7 @@ relativeWidth dec (V d l r) =
     Just L -> relativeWidth dec l
     Just R -> relativeWidth dec r
     _      -> 1.0
-relativeWidth _ (NextTo v) = widthIfHorizontal (toList v.vs)
+relativeWidth _ (NextTo vs) = widthIfHorizontal (toList vs)
 relativeWidth _ _ = 1.0
 
 widthIfHorizontal :: List (VVis Number) -> Number

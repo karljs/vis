@@ -24,12 +24,12 @@ data VVis a
          , label :: Maybe Label
          }
   | V Dim (VVis a) (VVis a)
-  | NextTo { vs :: (NonEmptyList (VVis a)) }
-  | Above { vs :: (NonEmptyList (VVis a)) }
+  | NextTo (NonEmptyList (VVis a))
+  | Above (NonEmptyList (VVis a))
   | MkCartesian (VVis a)
   | MkPolar (VVis a)
-  | Overlay { vs :: (NonEmptyList (VVis a)) }
-  | Stacked { vs :: (NonEmptyList (VVis a)) }
+  | Overlay (NonEmptyList (VVis a))
+  | Stacked (NonEmptyList (VVis a))
 
 instance showVVis :: Show a => Show (VVis a) where
   show (Fill f) = "Fill " <> show f.vps <> " "
@@ -37,16 +37,16 @@ instance showVVis :: Show a => Show (VVis a) where
                           <> "W: " <> show f.frameW <> " "
                           <> "label " <> show f.label
   show (V d l r) = "V " <> d <> "\n" <> show l <> "\n" <> show r <> "\nEnd: " <> d
-  show (NextTo v) =
-    "NextTo\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show v.vs))
-  show (Above v) =
-    "Above\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show v.vs))
+  show (NextTo vs) =
+    "NextTo\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
+  show (Above vs) =
+    "Above\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
   show (MkCartesian v) = "Cartesian\n" <> show v
   show (MkPolar v) = "Polar\n" <> show v
-  show (Overlay o) =
-    "Overlay\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show o.vs))
-  show (Stacked s) =
-    "Stacked\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show s.vs))
+  show (Overlay vs) =
+    "Overlay\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
+  show (Stacked vs) =
+    "Stacked\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
 
 data VPs = VPs
   { height :: Number

@@ -119,22 +119,22 @@ vs5 :: Array (V Number)
 vs5 = [ One 0.3, One 0.4, One 1.0, One 2.1, One 1.0]
 
 v1 :: VVis Number
-v1 = NextTo { vs: fillsH vs1 }
+v1 = NextTo $ fillsH vs1
 
 v2 :: VVis Number
 v2 = MkPolar v1
 
 v3 :: VVis Number
-v3 = Above { vs: fillsW vs2 }
+v3 = Above $ fillsW vs2
 
 k :: VVis Number
-k = NextTo { vs: fillsH vs3 }
+k = NextTo $ fillsH vs3
 
 v4 :: VVis Number
-v4 = NextTo { vs: fillsH vs4 }
+v4 = NextTo $ fillsH vs4
 
 v5 :: VVis Number
-v5 = NextTo { vs: fillsH vs5 }
+v5 = NextTo $ fillsH vs5
 
 tblue :: Color
 tblue = let b = toRGBA blue
@@ -151,13 +151,13 @@ overTest =
     (v5 `space` 0.25 `leftSpace` 0.02)
 
 plain1 :: VVis Number
-plain1 = NextTo { vs: fillsH vs3 }
+plain1 = NextTo $ fillsH vs3
 
 plain1log :: VVis Number
-plain1log = NextTo { vs: fillsH vs3log }
+plain1log = NextTo $ fillsH vs3log
 
 plain1sqrt :: VVis Number
-plain1sqrt = NextTo { vs: fillsH vs3sqrt }
+plain1sqrt = NextTo $ fillsH vs3sqrt
 
 vs3s :: Array (V Number)
 vs3s = map One $ sort [ 3.1, (1.0), (1.2), 1.7, 1.2, 2.9, 2.4, (2.5), 2.1, 2.3 ]
@@ -171,13 +171,13 @@ ps2s = map One $ sort [ 4.1, (-1.0), 2.0, 2.3, (-1.2), 1.3,  3.4,  4.2, 0.8, 2.9
 
 
 plain2 :: VVis Number
-plain2 = NextTo { vs: fillsH ps2 }
+plain2 = NextTo $ fillsH ps2
 
 plain1s :: VVis Number
-plain1s = NextTo { vs: fillsH vs3s }
+plain1s = NextTo $ fillsH vs3s
 
 plain2s :: VVis Number
-plain2s = NextTo { vs: fillsH ps2s }
+plain2s = NextTo $ fillsH ps2s
 
 hyb1 :: VVis Number
 hyb1 = V "Sorted" (above [plain1, plain2 `color1` blue])
@@ -193,10 +193,10 @@ lp2s :: Array (V Number)
 lp2s = map One $ sort $ map recip [ 4.1, (-1.0), 2.0, 2.3, (-1.2), 1.3,  3.4,  4.2, 0.8, 2.9 ]
 
 vlp2 :: VVis Number
-vlp2 = NextTo { vs: fillsH lp2 }
+vlp2 = NextTo $ fillsH lp2
 
 vlp2s :: VVis Number
-vlp2s = NextTo { vs: fillsH lp2s }
+vlp2s = NextTo $ fillsH lp2s
 
 hyb2 :: VVis Number
 hyb2 = above [ nextTo [plain2, vlp2] `space` 0.2
@@ -210,26 +210,26 @@ hyb3 = V "TxType" (overlayFlat (plain1 `color1` tgreen) (plain1log)) (overlayFla
 
 
 stk :: VVis Number
-stk = NextTo { vs: stacks [(-1.0),(-2.0),3.0] [2.0,(-3.0),4.0]}
+stk = NextTo $ stacks [(-1.0),(-2.0),3.0] [2.0,(-3.0),4.0]
 
 vpos1 :: VVis Number
 vpos1 =
-  let v = MkPolar $ NextTo { vs: fillsW (map One [8.5,6.3,7.3,6.3,3.9,9.7,7.5,9.6,7.9,9.6]) }
+  let v = MkPolar $ NextTo $ fillsW (map One [8.5,6.3,7.3,6.3,3.9,9.7,7.5,9.6,7.9,9.6])
   in v `color` defaultColors
 
 vpos2 :: VVis Number
 vpos2 =
-  let v = MkPolar $ NextTo { vs: fillsW (map One [6.6,1.3,5.5,1.5,8.1,5.0,7.1,6.4,7.3,8.8]) }
+  let v = MkPolar $ NextTo $ fillsW (map One [6.6,1.3,5.5,1.5,8.1,5.0,7.1,6.4,7.3,8.8])
   in v `color` defaultColors
 
 vpos1r :: VVis Number
 vpos1r =
-  let v = NextTo { vs: fillsH (map One [8.5,6.3,7.3,6.3,3.9,9.7,7.5,9.6,7.9,9.6]) }
+  let v = NextTo $ fillsH (map One [8.5,6.3,7.3,6.3,3.9,9.7,7.5,9.6,7.9,9.6])
   in v `color` defaultColors
 
 vpos2r :: VVis Number
 vpos2r =
-  let v = NextTo { vs: fillsH (map One [6.6,1.3,5.5,1.5,8.1,5.0,7.1,6.4,7.3,8.8]) }
+  let v = NextTo $ fillsH (map One [6.6,1.3,5.5,1.5,8.1,5.0,7.1,6.4,7.3,8.8])
   in v `color` defaultColors
 
 piedet :: VVis Number
@@ -248,15 +248,15 @@ piedet =
       v31 = head (fillsW [One 0.2]) `color1` orange
       v32 = head (fillsW [One 0.3]) `color1` deepOrange
       v33 = head (fillsW [One 0.3]) `color1` amber
-      right1 = NextTo { vs: cons v11 (cons v12 (singleton v13)) }
-      right2 = NextTo { vs: cons v21 (cons v22 (singleton v23)) }
-      right3 = NextTo { vs: cons v31 (cons v32 (singleton v33)) }
+      right1 = NextTo $ cons v11 (cons v12 (singleton v13))
+      right2 = NextTo $ cons v21 (cons v22 (singleton v23))
+      right3 = NextTo $ cons v31 (cons v32 (singleton v33))
       x1 = V "Region 1" v1 right1
       x2 = V "Region 2" v2 right2
       x3 = V "Region 3" v3 right3
   in setFrames fh fw $
        MkPolar $
-         NextTo { vs: cons x1 (cons x2 (singleton x3)) }
+         NextTo $ cons x1 (cons x2 (singleton x3))
 
 karl :: VVis Number
 karl = vPie [ Chc "Region 1" (One [3.0]) (One [1.9, 0.7, 0.4])
@@ -286,12 +286,12 @@ fiveb = V "TxType" (overlayFlat (plain1log `color1` tblue) (plain1 `color1` gree
 
 fivech1 :: VVis Number
 fivech1 =
-  let v = MkPolar $ NextTo { vs: fillsW (map One [1.4, 0.7, 1.9, 1.2]) }
+  let v = MkPolar $ NextTo $ fillsW (map One [1.4, 0.7, 1.9, 1.2])
   in v `color` defaultColors
 
 fivech2 :: VVis Number
 fivech2 =
-  let v = MkPolar $ NextTo { vs: fillsW (map One [1.0, 2.1, 0.9]) }
+  let v = MkPolar $ NextTo $ fillsW (map One [1.0, 2.1, 0.9])
   in v `color` defaultColors
 
 
