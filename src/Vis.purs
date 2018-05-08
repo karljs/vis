@@ -49,6 +49,7 @@ module Vis
   , hspace
   , vspace
   , vPie
+  , vBarchart
   ) where
 
 import Color (Color, white)
@@ -80,7 +81,9 @@ mapFill f (Polar v) = Polar $ mapFill f v
 mapFill f (Overlay vs) = Overlay $ map (mapFill f) vs
 mapFill f (Stacked vs) = Stacked $ map (mapFill f) vs
 
--- mapVPs :: forall a b. (VPs -> VPs) -> VVis -> VVis b
+mapVPs :: forall a b. (VPs -> VPs) -> VVis -> VVis
+mapVPs f = let ff fr = fr { vps = f fr.vps }
+           in mapFill ff
 
 
 --------------------------------------------------------------------------------
@@ -88,7 +91,7 @@ mapFill f (Stacked vs) = Stacked $ map (mapFill f) vs
 
 -- | Change the orientation between vertical and horizontal, or angle and radius
 reorient :: forall a. VVis -> VVis
-reorient v = mapFill (\fr -> (fr { vps = swapWH fr.vps})) v
+reorient = mapVPs swapWH
 
 swapWH :: VPs -> VPs
 swapWH (VPs vp) =
@@ -163,18 +166,11 @@ getVPsZip f (Fill v1) (Fill v2) = Fill (v1 { vps = f v1.vps v2.vps })
 getVPsZip _ v _ = v
 
 fixLabels :: VVis -> VVis
-fixLabels (Fill v) =
-  let l = case getOrientation v.vps of
-            Vertical -> defaultLabel (getHeight v.vps)
-            Horizontal -> defaultLabel (getWidth v.vps)
-  in Fill (v { label = Just l })
-fixLabels (NextTo vs) = NextTo $ map fixLabels vs
-fixLabels (Above vs) = Above $ map fixLabels vs
-fixLabels (Overlay vs) = Overlay $ map fixLabels vs
-fixLabels (Stacked vs) = Stacked $ map fixLabels vs
-fixLabels (V d l r) = V d (fixLabels l) (fixLabels r)
-fixLabels (Cartesian v) = Cartesian (fixLabels v)
-fixLabels (Polar v) = Polar (fixLabels v)
+fixLabels = mapFill f where
+  f fr = let l = case getOrientation fr.vps of
+                   Vertical -> defaultLabel (getHeight fr.vps)
+                   Horizontal -> defaultLabel (getWidth fr.vps)
+         in (fr { label = Just l })
 
 minusHeight :: VPs -> VPs -> VPs
 minusHeight (VPs v1) (VPs v2) =
@@ -234,15 +230,8 @@ color (Overlay vs) cs = Overlay $ NE.zipWith color1 vs cs
 color (Stacked vs) cs = Stacked $ NE.zipWith color1 vs cs
 
 color1 :: forall a. VVis -> Color -> VVis
-color1 (Fill f) c = let (VPs vps) = f.vps
-                    in Fill (f { vps = (VPs (vps { color = c } )) })
-color1 (V d l r) c = V d (color1 l c) (color1 r c)
-color1 (NextTo vs) c = NextTo $ map (flip color1 c) vs
-color1 (Above vs) c = Above $ map (flip color1 c) vs
-color1 (Cartesian v) c = Cartesian (color1 v c)
-color1 (Polar v) c = Polar (color1 v c)
-color1 (Overlay vs) c = Overlay $ map (flip color1 c) vs
-color1 (Stacked vs) c = Stacked $ map (flip color1 c) vs
+color1 v c = mapVPs (f c) v where
+  f c (VPs vps) = VPs (vps { color = c })
 
 --------------------------------------------------------------------------------
 -- Things related to variability
@@ -382,12 +371,9 @@ visMinW (Stacked vs) = case visOrientation (NE.head vs) of
 --------------------------------------------------------------------------------
 -- Helper functions for (mostly unsafely) constructing nonempty lists of things
 
--- barchart :: NE.NonEmptyList (VVis)
--- barchart = NextTo <<< fillsH
-
 -- | Create fill objects for an array of variational numbers where the data is
 -- | bound to the height
-fillsH :: Array (V Number) -> NE.NonEmptyList (VVis)
+fillsH :: Array (V Number) -> NE.NonEmptyList VVis
 fillsH hsarr =
   let hs = A.toUnfoldable hsarr
       fw = Frame { frameMin: 0.0, frameMax: 1.0 }
@@ -418,17 +404,6 @@ fillsWA fh fw (One x) =
               , frameW: fw
               , label: Nothing
               }
-
-vPie :: Array (V (Array Number)) -> VVis
-vPie xs =
-  let mna = map (map (\a -> U.unsafeMaybe (F.minimum a))) (map plainVals xs)
-      mn  = U.unsafeMaybe (F.minimum (map U.minimum mna))
-      mxa = map (map (\a -> U.unsafeMaybe (F.maximum a))) (map plainVals xs)
-      mx  = U.unsafeMaybe (F.maximum (map U.maximum mna))
-      fh = Frame { frameMin: 0.0, frameMax: 1.0 }
-      fw = Frame { frameMin: min 0.0 mn, frameMax: max 0.0 mx}
-      fs = map (fillsWA fh fw) xs
-  in Polar $ NextTo $ U.unsafeMaybe (NE.fromFoldable fs)
 
 setW :: Number -> V Number -> V (Tuple Number Number)
 setW w (Chc d l r) = Chc d (setW w l) (setW w r)
@@ -591,3 +566,18 @@ stacks xs ys =
 
 stack2 :: forall a. VVis -> VVis -> VVis
 stack2 x y = Stacked (NE.cons x (NE.singleton y))
+
+vBarchart :: Array (V Number) -> VVis
+vBarchart = NextTo <<< fillsH
+
+vPie :: Array (V (Array Number)) -> VVis
+vPie xs =
+  let mna = map (map (\a -> U.unsafeMaybe (F.minimum a))) (map plainVals xs)
+      mn  = U.unsafeMaybe (F.minimum (map U.minimum mna))
+      mxa = map (map (\a -> U.unsafeMaybe (F.maximum a))) (map plainVals xs)
+      mx  = U.unsafeMaybe (F.maximum (map U.maximum mna))
+      fh = Frame { frameMin: 0.0, frameMax: 1.0 }
+      fw = Frame { frameMin: min 0.0 mn, frameMax: max 0.0 mx}
+      fs = map (fillsWA fh fw) xs
+  in Polar $ NextTo $ U.unsafeMaybe (NE.fromFoldable fs)
+
