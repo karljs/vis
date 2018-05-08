@@ -91,7 +91,10 @@ mapVPs f = let ff fr = fr { vps = f fr.vps }
 
 -- | Change the orientation between vertical and horizontal, or angle and radius
 reorient :: forall a. VVis -> VVis
-reorient = mapVPs swapWH
+reorient =  mapFill f where
+  f fr = fr { frameW = fr.frameH
+            , frameH = fr.frameW
+            , vps = swapWH fr.vps }
 
 swapWH :: VPs -> VPs
 swapWH (VPs vp) =

@@ -45,11 +45,12 @@ module Main
   , karl
   ) where
 
+import Color.Scheme.MaterialDesign
+import Vis
+
 import Canvas (cComponent)
 import Color (Color, rgba, toRGBA)
-import Color.Scheme.Clrs (gray)
-import Color.Scheme.MaterialDesign
-import Color.Scheme.X11 (darkgray, darkslategrey, lightblue, lightgray, lightseagreen, lightslategray)
+import Color.Scheme.X11 (lightblue, lightseagreen)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Loops (whileJust)
@@ -61,10 +62,9 @@ import Graphics.Canvas (CANVAS)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
-import Math (ln2, log, sqrt)
+import Math (log, sqrt)
 import Prelude (Unit, bind, map, negate, ($), (/))
 import V (V(..))
-import Vis
 import Vis.Types (Frame(..), VVis(..))
 import VisColor (defaultColors)
 
