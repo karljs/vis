@@ -43,6 +43,14 @@ module Main
   , fiveb
   , fivec
   , karl
+  , one1
+  , one2
+  , one3
+  , gen1exp
+  , gen1flat
+  , gen1
+  , gen2
+  , tx1
   ) where
 
 import Color.Scheme.MaterialDesign
@@ -58,14 +66,15 @@ import DOM.HTML.Types (htmlElementToNode)
 import DOM.Node.Node (firstChild, removeChild)
 import Data.Array (sort)
 import Data.List.NonEmpty (cons, head, singleton)
+import Data.Tuple (Tuple(..))
 import Graphics.Canvas (CANVAS)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 import Math (log, sqrt)
-import Prelude (Unit, bind, map, negate, ($), (/))
-import V (V(..))
-import Vis.Types (Frame(..), VVis(..))
+import Prelude (Unit, bind, id, map, negate, ($), (/))
+import V (Dir(..), V(..), emptyDec, singleDec)
+import Vis.Types (Frame(..), VVis(..), ppv)
 import VisColor (defaultColors)
 
 main :: Eff (HA.HalogenEffects (canvas :: CANVAS, console :: CONSOLE)) Unit
@@ -296,3 +305,41 @@ fivech2 =
 
 fivec :: VVis
 fivec = V "Sorted" (Polar $ above [fivech1, fivech2]) (Polar $ above [vsort fivech1, vsort fivech2])
+
+--------------------------------------------------------------------------------
+-- DSL Paper
+
+one1 :: VVis
+one1 = Polar $ reorient v5
+
+one2 :: VVis
+one2 =  Polar v5
+
+one3 :: VVis
+one3 = v5 `space` 0.1 `color1` blue
+
+expNums :: Array Number
+expNums =
+  [ 2.864789, 11.911104, 1.805466, 17.368300, 1.917854, 34.593753, 3.880754
+  , 6.509856, 11.427113, 3.770759, 10.572341, 8.152960, 1.590584, 23.243793
+  , 2.427679, 4.796895, 9.408906, 17.731271, 17.155314, 1.154889 ]
+
+gen1exp :: VVis
+gen1exp = vBarchart (map One expNums)
+
+gen1flat :: VVis
+gen1flat = vBarchart (map (\n -> One (sqrt n)) expNums)
+
+gen1 :: VVis
+gen1 = vApp (mapVPs $ onHeight sqrt) "sqrt" gen1exp
+
+gen2 :: VVis
+gen2 = branch (mapVPs (onHeight (\x -> 1.0 / x)))
+              (singleDec (Tuple "sqrt" L))
+              "recip"
+              gen1
+
+tx1 :: VVis
+tx1 = mutate (\v -> v `label` ["1","2","3","4","5","6"]) emptyDec v1
+
+

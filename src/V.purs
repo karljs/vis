@@ -8,6 +8,7 @@ module V
   , plainVals
   , showDec
   , showDecM
+  , singleDec
   , toggleDim
   , vDims
   ) where
@@ -87,3 +88,6 @@ showDec = M.showTree
 -- | Produce a text representation of a decision that may or may not exist.
 showDecM :: Maybe Decision -> String
 showDecM = maybe "DEC ERROR" showDec
+
+singleDec :: Tuple Dim Dir -> Decision
+singleDec x = M.fromFoldable (singleton x)

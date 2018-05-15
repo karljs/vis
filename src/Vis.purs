@@ -1,10 +1,18 @@
 module Vis
   ( module Vis.Types
 
+  , vApp
+  , branch
+  , onHeight
+  , mutate
+  , replace
   , color
   , color1
+  , label
+  , label1
   , flop
   , mapFill
+  , mapVPs
   , removeCoord
   , reorient
   , rotate
@@ -54,6 +62,7 @@ module Vis
 
 import Color (Color, white)
 import Color.Scheme.MaterialDesign (green)
+import Data.Array (all, toUnfoldable)
 import Data.Array as A
 import Data.Foldable as F
 import Data.List (List(Nil), concatMap, filter, nub, partition, (:)) as L
@@ -64,7 +73,7 @@ import Data.String (take)
 import Data.Tuple (Tuple(..))
 import Math (min)
 import Partial.Unsafe (unsafePartial)
-import Prelude (class Show, comparing, flip, map, max, show, ($), (+), (-), (<), (<<<), (<>), (==), (||))
+import Prelude (class Show, comparing, flip, map, max, show, ($), (&&), (+), (-), (<), (<<<), (<>), (==), (||))
 import Util (doUnsafeListOp, intersperse, maximum, minimum, unsafeMaybe, unsafeNonEmpty, vmaximum, vminimum) as U
 import V (Decision, Dim, Dir(..), V(..), lookupDim, plainVals)
 import Vis.Types (Frame(..), Label(..), LabelPositionH(..), LabelPositionV(..), Orientation(..), VPs(..), VVis(..), FillRec)
@@ -81,7 +90,7 @@ mapFill f (Polar v) = Polar $ mapFill f v
 mapFill f (Overlay vs) = Overlay $ map (mapFill f) vs
 mapFill f (Stacked vs) = Stacked $ map (mapFill f) vs
 
-mapVPs :: forall a b. (VPs -> VPs) -> VVis -> VVis
+mapVPs :: (VPs -> VPs) -> VVis -> VVis
 mapVPs f = let ff fr = fr { vps = f fr.vps }
            in mapFill ff
 
@@ -89,8 +98,133 @@ mapVPs f = let ff fr = fr { vps = f fr.vps }
 --------------------------------------------------------------------------------
 -- Transformations
 
+vApp :: (VVis -> VVis) -> Dim -> VVis -> VVis
+vApp f d v = V d v (f v)
+
+onHeight :: (Number -> Number) -> VPs -> VPs
+onHeight f (VPs vps) = VPs (vps { height = f vps.height} )
+
+branch :: (VVis -> VVis) -> Decision -> Dim -> VVis -> VVis
+branch f dec dim (Fill fr) = vApp f dim (Fill fr)
+branch f dec dim (V d l r) = case lookupDim d dec of
+  Just L  -> V d (branch f dec dim l) r
+  Just R  -> V d l (branch f dec dim r)
+  Nothing -> if lacksDims dec (V d l r)
+             then vApp f dim (V d l r)
+             else V d (branch f dec dim l) (branch f dec dim r)
+branch f dec dim (NextTo vs) =
+  if lacksDims dec (NextTo vs)
+  then vApp f dim (NextTo vs)
+  else NextTo $ map (branch f dec dim) vs
+branch f dec dim (Above vs) =
+  if lacksDims dec (Above vs)
+  then vApp f dim (Above vs)
+  else Above $ map (branch f dec dim) vs
+branch f dec dim (Stacked vs) =
+  if lacksDims dec (Stacked vs)
+  then vApp f dim (Stacked vs)
+  else Stacked $ map (branch f dec dim) vs
+branch f dec dim (Overlay vs) =
+  if lacksDims dec (Overlay vs)
+  then vApp f dim (Overlay vs)
+  else Overlay $ map (branch f dec dim) vs
+branch f dec dim (Polar v) =
+  if lacksDims dec (Polar v)
+  then vApp f dim (Polar v)
+  else Polar $ branch f dec dim v
+branch f dec dim (Cartesian v) =
+  if lacksDims dec (Cartesian v)
+  then vApp f dim (Cartesian v)
+  else Cartesian $ branch f dec dim v
+
+mutate :: (VVis -> VVis) -> Decision -> VVis -> VVis
+mutate f dec (V d l r) =
+  case lookupDim d dec of
+    Just L  -> V d (mutate f dec l) r
+    Just R  -> V d l (mutate f dec r)
+    Nothing -> if lacksDims dec (V d l r)
+               then f (V d l r)
+               else V d (mutate f dec l)
+                        (mutate f dec r)
+mutate f _ (Fill fr) = f (Fill fr)
+mutate f dec (NextTo vs) =
+  if lacksDims dec (NextTo vs)
+  then f (NextTo vs)
+  else NextTo $ map (mutate f dec) vs
+mutate f dec (Above vs) =
+  if lacksDims dec (Above vs)
+  then f (Above vs)
+  else Above $ map (mutate f dec) vs
+mutate f dec (Overlay vs) =
+  if lacksDims dec (Overlay vs)
+  then f (Overlay vs)
+  else Overlay $ map (mutate f dec) vs
+mutate f dec (Stacked vs) =
+  if lacksDims dec (Stacked vs)
+  then f (Stacked vs)
+  else Stacked $ map (mutate f dec) vs
+mutate f dec (Cartesian v) =
+  if lacksDims dec (Cartesian v)
+  then f (Cartesian v)
+  else Cartesian $ mutate f dec v
+mutate f dec (Polar v) =
+  if lacksDims dec (Polar v)
+  then f (Polar v)
+  else Polar $ mutate f dec v
+
+replace :: VVis -> Decision -> VVis -> VVis
+replace newv dec oldv = mutate (\_ -> newv) dec oldv
+
+lacksDims :: Decision -> VVis -> Boolean
+lacksDims dec (V d l r)     = case lookupDim d dec of
+  Nothing -> lacksDims dec l && lacksDims dec r
+  _       -> false
+lacksDims dec (Fill _)      = true
+lacksDims dec (NextTo vs)   = all ((==) true) (map (lacksDims dec) vs)
+lacksDims dec (Above vs)    = all ((==) true) (map (lacksDims dec) vs)
+lacksDims dec (Overlay vs)  = all ((==) true) (map (lacksDims dec) vs)
+lacksDims dec (Stacked vs)  = all ((==) true) (map (lacksDims dec) vs)
+lacksDims dec (Polar v)     = lacksDims dec v
+lacksDims dec (Cartesian v) = lacksDims dec v
+
+label :: VVis -> Array String -> VVis
+label v a =
+  let ls = map mkLabel a
+  in labelNE v (U.unsafeNonEmpty (toUnfoldable ls))
+
+mkLabel :: String -> Label
+mkLabel s = Label { text: s
+                  , position: Tuple VPosMiddle HPosMiddle
+                  , size: 36.0 }
+
+labelNE :: VVis -> NE.NonEmptyList Label -> VVis
+labelNE (Fill fr) ls = Fill (fr {label = Just (NE.head ls)})
+labelNE (V d l r) ls = V d (labelNE l ls) (labelNE r ls)
+labelNE (NextTo vs) ls = NextTo $ NE.zipWith label1 vs ls
+labelNE (Above vs) ls = Above $ NE.zipWith label1 vs ls
+labelNE (Overlay vs) ls = Overlay $ NE.zipWith label1 vs ls
+labelNE (Stacked vs) ls = Stacked $ NE.zipWith label1 vs ls
+labelNE (Cartesian v) ls = Cartesian $ labelNE v ls
+labelNE (Polar v) ls = Cartesian $ labelNE v ls
+
+label1 :: VVis -> Label -> VVis
+label1 (Fill fr) ll = Fill (fr { label = Just ll })
+label1 (V d l r) ll = V d (label1 l ll) (label1 r ll)
+label1 (NextTo vs) ll = NextTo $ map (\v -> label1 v ll) vs
+label1 (Above vs) ll = Above $ map (\v -> label1 v ll) vs
+label1 (Overlay vs) ll = Overlay $ map (\v -> label1 v ll) vs
+label1 (Stacked vs) ll = Stacked $ map (\v -> label1 v ll) vs
+label1 (Cartesian v) ll = Cartesian $ label1 v ll
+label1 (Polar v) ll = Polar $ label1 v ll
+
+labelList ::
+  NE.NonEmptyList Label -> NE.NonEmptyList VVis -> NE.NonEmptyList VVis
+
+labelList _ vs = vs
+
+
 -- | Change the orientation between vertical and horizontal, or angle and radius
-reorient :: forall a. VVis -> VVis
+reorient :: VVis -> VVis
 reorient =  mapFill f where
   f fr = fr { frameW = fr.frameH
             , frameH = fr.frameW
@@ -105,7 +239,7 @@ swapWH (VPs vp) =
         swapO Horizontal = Vertical
 
 -- | Change the direction of composition
-flop :: forall a. VVis -> VVis
+flop :: VVis -> VVis
 flop (Fill f) = Fill f
 flop (V d l r) = V d (flop l) (flop r)
 flop (NextTo vs) = Above $ map flop vs
@@ -116,7 +250,7 @@ flop (Overlay vs) = Overlay $ map flop vs
 flop (Stacked vs) = Stacked $ map flop vs
 
 -- | Flop, then reorient
-rotate :: forall a. VVis -> VVis
+rotate :: VVis -> VVis
 rotate = reorient <<< flop
 
 vsort :: VVis -> VVis
@@ -185,7 +319,7 @@ plusHeight (VPs v1) (VPs v2) =
 
 -- | Iterate over a visualization and remove all the constructors that change
 -- | the coordinate system.
-removeCoord :: forall a. VVis -> VVis
+removeCoord :: VVis -> VVis
 removeCoord (Fill f) = Fill f
 removeCoord (V d l r) = V d (removeCoord l) (removeCoord r)
 removeCoord (NextTo vs) = NextTo $ map removeCoord vs
@@ -221,7 +355,7 @@ bottomSpace v n = Above (NE.cons v (NE.singleton (vspace n)))
 --------------------------------------------------------------------------------
 -- Aesthetics and style functions
 
-color :: forall a. VVis -> NE.NonEmptyList Color -> VVis
+color :: VVis -> NE.NonEmptyList Color -> VVis
 color (Fill f) cs = let (VPs vps) = f.vps
                     in Fill (f { vps = (VPs (vps { color = NE.head cs } )) })
 color (V d l r) cs = V d (color l cs) (color r cs)
@@ -232,7 +366,7 @@ color (Polar v) cs = Polar (color v cs)
 color (Overlay vs) cs = Overlay $ NE.zipWith color1 vs cs
 color (Stacked vs) cs = Stacked $ NE.zipWith color1 vs cs
 
-color1 :: forall a. VVis -> Color -> VVis
+color1 :: VVis -> Color -> VVis
 color1 v c = mapVPs (f c) v where
   f c (VPs vps) = VPs (vps { color = c })
 
@@ -245,7 +379,7 @@ selectVisM md v = maybe v (flip selectVis v) md
 
 
 -- | Perform selection on a variational visualization.
-selectVis :: forall a. Decision -> VVis -> VVis
+selectVis :: Decision -> VVis -> VVis
 selectVis _ (Fill f) = Fill f
 selectVis dec (V d l r) = case lookupDim d dec of
   Just L -> selectVis dec l
@@ -260,12 +394,12 @@ selectVis dec (Stacked vs) = Stacked $ map (selectVis dec) vs
 
 -- | Generate an initial (view) decision for a particular visualization.
 -- | Generally this will be all left selections.
-visInitDec :: forall a. VVis -> Decision
+visInitDec :: VVis -> Decision
 visInitDec v = empty
   -- leftDec (visDims v)
 
 -- | Extract all the dimensions from a visualization
-visDims :: forall a. VVis -> L.List Dim
+visDims :: VVis -> L.List Dim
 visDims = L.nub <<< visDimsHelp where
   visDimsHelp (Fill _) = L.Nil
   visDimsHelp (V d l r) = d L.: (visDimsHelp l <> visDimsHelp r)
@@ -295,6 +429,7 @@ getColor (VPs vps) = vps.color
 getOrientation :: VPs -> Orientation
 getOrientation (VPs vps) = vps.orientation
 
+
 splitPosNeg ::
   L.List (VVis) ->
   Tuple (L.List (VVis)) (L.List (VVis))
@@ -308,11 +443,11 @@ anyNegative (Fill f) =
   in vps.height < 0.0 || vps.width < 0.0
 anyNegative _ = false
 
-isFill :: forall a. VVis -> Boolean
+isFill :: VVis -> Boolean
 isFill (Fill _) = true
 isFill _ = false
 
-visOrientation :: forall a. VVis -> Orientation
+visOrientation :: VVis -> Orientation
 visOrientation (Fill f) = getOrientation f.vps
 visOrientation (V _ l _) = visOrientation l
 visOrientation (NextTo vs) = visOrientation (NE.head vs)
@@ -454,8 +589,8 @@ genFill fh fw o (One (Tuple w h)) =
   in Fill { vps: vp
           , frameH: fh
           , frameW: fw
-          -- , label: Nothing
-          , label: Just l
+          , label: Nothing
+          -- , label: Just l
           }
 genFill fh fw o (Chc d l r) = V d (genFill fh fw o l) (genFill fh fw o r)
 
@@ -485,27 +620,27 @@ defaultLabel v = Label { text: take 4 (show v)
 
 -- | An _unsafe_ helper function (when the parameter list is empty) for
 -- | composing with `NextTo`.
-nextTo' :: forall a. L.List (VVis) -> VVis
+nextTo' :: L.List (VVis) -> VVis
 nextTo' vs = NextTo $ unsafePartial $ fromJust $ NE.fromList vs
 
-nextTo :: forall a. Array (VVis) -> VVis
+nextTo :: Array (VVis) -> VVis
 nextTo vs = nextTo' $ A.toUnfoldable vs
 
 -- | An _unsafe_ helper function (when the parameter list is empty) for
 -- | composing with `Above`.
-above' :: forall a. L.List (VVis) -> VVis
+above' :: L.List (VVis) -> VVis
 above' vs = Above $ unsafePartial $ fromJust $ NE.fromList vs
 
 -- | An _unsafe_ helper function (when the parameter array is empty) for
 -- | composing with `Above`.
-above :: forall a. Array (VVis) -> VVis
+above :: Array (VVis) -> VVis
 above vs = above' $ A.toUnfoldable vs
 
 -- | Overlay the first visualization over the second
-overlay :: forall a. VVis -> VVis -> VVis
+overlay :: VVis -> VVis -> VVis
 overlay v1 v2 = Overlay $ NE.cons v1 (NE.singleton v2)
 
-overlayFlat :: forall a. VVis -> VVis -> VVis
+overlayFlat :: VVis -> VVis -> VVis
 overlayFlat v1 v2 =
   let maxH = max (visMaxH v1) (visMaxH v2)
       maxW = max (visMaxW v1) (visMaxW v2)
@@ -525,7 +660,7 @@ overlayFlat v1 v2 =
 
 -- | Set or overwrite the frames for an existing visualization.  Parameters
 -- | have the height frame first, followed by the width frame.
-setFrames :: forall a. Frame -> Frame -> VVis -> VVis
+setFrames :: Frame -> Frame -> VVis -> VVis
 setFrames fh fw (Fill f) = Fill (f { frameH = fh, frameW = fw })
 setFrames fh fw (V d l r) = V d (setFrames fh fw l) (setFrames fh fw r)
 setFrames fh fw (NextTo vs) = NextTo $ map (setFrames fh fw) vs
@@ -567,7 +702,7 @@ stacks xs ys =
   in map (setFrames fh fw)
          (NE.zipWith stack2 (fillsH (map One xs)) (fillsH (map One ys)))
 
-stack2 :: forall a. VVis -> VVis -> VVis
+stack2 :: VVis -> VVis -> VVis
 stack2 x y = Stacked (NE.cons x (NE.singleton y))
 
 vBarchart :: Array (V Number) -> VVis
@@ -583,4 +718,3 @@ vPie xs =
       fw = Frame { frameMin: min 0.0 mn, frameMax: max 0.0 mx}
       fs = map (fillsWA fh fw) xs
   in Polar $ NextTo $ U.unsafeMaybe (NE.fromFoldable fs)
-

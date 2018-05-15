@@ -7,6 +7,7 @@ module Vis.Types
   , Orientation(..)
   , VPs(..)
   , VVis(..)
+  , ppv
   ) where
 
 import Color (Color)
@@ -40,7 +41,7 @@ instance showVVis :: Show VVis where
                           <> "H: " <> show f.frameH <> " "
                           <> "W: " <> show f.frameW <> " "
                           <> "label " <> show f.label
-  show (V d l r) = "V " <> d <> "\n" <> show l <> "\n" <> show r <> "\nEnd: " <> d
+  show (V d l r) = "V " <> d <> " left\n" <> show l <> "right\n" <> show r <> "\nEnd: " <> d
   show (NextTo vs) =
     "NextTo\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
   show (Above vs) =
@@ -51,6 +52,16 @@ instance showVVis :: Show VVis where
     "Overlay\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
   show (Stacked vs) =
     "Stacked\n" <> (foldr (\x xs -> (x <> "\n" <> xs)) "\n" (map show vs))
+
+ppv :: VVis -> String
+ppv (V d l r) = d <> "<" <> ppv l <> ", " <> ppv r <> ">"
+ppv (Fill _) = "v"
+ppv (Above vs) = "abv[]"
+ppv (NextTo _) = "nxt[]"
+ppv (Overlay _) = "ovr[]"
+ppv (Stacked _) = "stk[]"
+ppv (Cartesian _) = "crt[]"
+ppv (Polar _) = "pol[]"
 
 data VPs = VPs
   { height :: Number
