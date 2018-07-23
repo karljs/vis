@@ -51,6 +51,17 @@ module Main
   , gen1
   , gen2
   , tx1
+  , fourBars
+  , mutp1
+  , mutp2
+  , mutp3
+  , mut1
+  , mut2
+  , flt1
+  , flt1l
+  , flt1r
+  , titanic
+  , fltoff
   ) where
 
 import Color.Scheme.MaterialDesign
@@ -58,22 +69,24 @@ import Vis
 
 import Canvas (cComponent)
 import Color (Color, rgba, toRGBA)
-import Color.Scheme.X11 (lightblue, lightseagreen)
+import Color.Scheme.X11 (forestgreen, lightblue, lightseagreen)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Loops (whileJust)
 import DOM.HTML.Types (htmlElementToNode)
 import DOM.Node.Node (firstChild, removeChild)
 import Data.Array (sort)
-import Data.List.NonEmpty (cons, head, singleton)
+import Data.Foldable (length)
+import Data.List ((:))
+import Data.List.NonEmpty (cons, head, singleton, toList, toUnfoldable)
 import Data.Tuple (Tuple(..))
 import Graphics.Canvas (CANVAS)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 import Math (log, sqrt)
-import Prelude (Unit, bind, id, map, negate, ($), (/))
-import V (Dir(..), V(..), emptyDec, singleDec)
+import Prelude (Unit, bind, id, map, negate, ($), (/), (<<<))
+import V (Dir(..), V(..), dec, emptyDec, singleDec)
 import Vis.Types (Frame(..), VVis(..), ppv)
 import VisColor (defaultColors)
 
@@ -103,8 +116,9 @@ go vis = HA.runHalogenAff do
 -- Some test values for charting
 
 vs1 :: Array (V Number)
-vs1 = [ One 8.1, Chc "Dim1" (One (-3.0)) (One 6.0), One 2.3, One (-5.2),
-        One 1.3, Chc "Dim2" (One 3.4) (One 5.2) ]
+vs1 = [ One 8.1, Chc "February" (One (-3.0)) (One 6.0), One 2.3, One (-5.2),
+        One 1.3, Chc "June" (One 3.4) (One 5.2), One 7.2, One 7.0, One 4.5,
+        One 8.0, One (-2.3), One 5.9 ]
 
 vs2 :: Array (V Number)
 vs2 = [ One 2.3, One 6.8, One (-1.0), Chc "Dim3" (One 1.0) (One 4.0),
@@ -342,4 +356,48 @@ gen2 = branch (mapVPs (onHeight (\x -> 1.0 / x)))
 tx1 :: VVis
 tx1 = mutate (\v -> v `label` ["1","2","3","4","5","6"]) emptyDec v1
 
+fourBars :: VVis -> Boolean
+fourBars (NextTo vs) = case toUnfoldable vs of
+  [Fill _, Fill _, Fill _, Fill _] -> true
+  _ -> false
+fourBars (Above vs) = case toUnfoldable vs of
+  [Fill _, Fill _, Fill _, Fill _] -> true
+  _ -> false
+fourBars (Cartesian v) = fourBars v
+fourBars _ = false
 
+mutp1 :: VVis
+mutp1 = barchart [2.0, 1.0, 6.0, 7.0] `color` defaultColors
+
+mutp2 :: VVis
+mutp2 = barchart [3.0, 6.0, 4.0, 5.0] `color` defaultColors
+
+mutp3 :: VVis
+mutp3 = barchart [7.0, 7.0, 4.0, 9.0, 4.0, 10.0, 8.0, 4.0, 1.0, 9.0, 8.0, 9.0, 2.0, 9.0, 6.0, 7.0, 9.0, 1.0, 8.0, 1.0, 4.0, 2.0, 6.0, 10.0, 8.0, 8.0, 9.0, 7.0, 3.0, 7.0] `color1` blue
+
+mut1 :: VVis
+mut1 = above [nextTo [mutp1, mutp2] `space` 0.2, mutp3] `space` 0.2
+
+mut2 :: VVis
+mut2 = ifMutate fourBars (Polar <<< reorient) emptyDec mut1
+
+flt1 :: VVis
+flt1 = flatten avgBars emptyDec v1
+
+flt1l :: VVis
+flt1l = (selectVis (dec [Tuple "February" L, Tuple "June" L]) v1)
+         `space` 0.4
+         `alpha` 0.75
+         `leftSpace` 0.02
+
+flt1r :: VVis
+flt1r = (selectVis (dec [Tuple "February" R, Tuple "June" R]) v1)
+         `space` 0.4
+         `alpha` 0.55
+         `rightSpace` 0.02
+
+fltoff :: VVis
+fltoff = overlay flt1l (overlay flt1r (flt1 `space` 0.4 `leftSpace` 0.01 `rightSpace` 0.01))
+
+titanic :: VVis
+titanic = barchart [885.0, 706.0, 285.0, 325.0] `color1` forestgreen `label` ["885","706","285","325"]

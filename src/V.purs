@@ -1,5 +1,6 @@
 module V
   ( module V.Types
+  , dec
   , decDims
   , emptyDec
   , leftDec
@@ -13,6 +14,7 @@ module V
   , vDims
   ) where
 
+import Data.Array (toUnfoldable)
 import Data.List (List(..), (:), nub, sort)
 import Data.List.NonEmpty (singleton)
 import Data.List.Types (NonEmptyList)
@@ -91,3 +93,7 @@ showDecM = maybe "DEC ERROR" showDec
 
 singleDec :: Tuple Dim Dir -> Decision
 singleDec x = M.fromFoldable (singleton x)
+
+dec :: Array (Tuple Dim Dir) -> Decision
+dec a = let l = toUnfoldable a :: List (Tuple Dim Dir)
+        in M.fromFoldable l

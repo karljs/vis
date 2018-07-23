@@ -6,8 +6,12 @@ module Vis
   , onHeight
   , mutate
   , replace
+  , ifMutate
+  , isVis
+  , flatten
   , color
   , color1
+  , alpha
   , label
   , label1
   , flop
@@ -20,6 +24,8 @@ module Vis
   , vZipWith
   , minusHeight
   , plusHeight
+  , addBars
+  , avgBars
   , setFrames
 
   , space
@@ -58,9 +64,11 @@ module Vis
   , vspace
   , vPie
   , vBarchart
+  , barchart
+  , piechart
   ) where
 
-import Color (Color, white)
+import Color (Color, rgba', toRGBA', white)
 import Color.Scheme.MaterialDesign (green)
 import Data.Array (all, toUnfoldable)
 import Data.Array as A
@@ -73,7 +81,7 @@ import Data.String (take)
 import Data.Tuple (Tuple(..))
 import Math (min)
 import Partial.Unsafe (unsafePartial)
-import Prelude (class Show, comparing, flip, map, max, show, ($), (&&), (+), (-), (<), (<<<), (<>), (==), (||))
+import Prelude (class Show, comparing, flip, map, max, otherwise, show, ($), (&&), (+), (-), (/), (<), (<<<), (<>), (==), (||))
 import Util (doUnsafeListOp, intersperse, maximum, minimum, unsafeMaybe, unsafeNonEmpty, vmaximum, vminimum) as U
 import V (Decision, Dim, Dir(..), V(..), lookupDim, plainVals)
 import Vis.Types (Frame(..), Label(..), LabelPositionH(..), LabelPositionV(..), Orientation(..), VPs(..), VVis(..), FillRec)
@@ -94,12 +102,18 @@ mapVPs :: (VPs -> VPs) -> VVis -> VVis
 mapVPs f = let ff fr = fr { vps = f fr.vps }
            in mapFill ff
 
+-- updVP :: (VPs -> VPs) -> VVis -> VVis
+-- updVP f = mapFill (_ { vps = f })
+
 
 --------------------------------------------------------------------------------
 -- Transformations
 
 vApp :: (VVis -> VVis) -> Dim -> VVis -> VVis
 vApp f d v = V d v (f v)
+
+vary :: Tuple Dim (VVis -> VVis) -> VVis -> VVis
+vary (Tuple dim f) vis = V dim (vis) (f vis)
 
 onHeight :: (Number -> Number) -> VPs -> VPs
 onHeight f (VPs vps) = VPs (vps { height = f vps.height} )
@@ -175,6 +189,49 @@ mutate f dec (Polar v) =
 replace :: VVis -> Decision -> VVis -> VVis
 replace newv dec oldv = mutate (\_ -> newv) dec oldv
 
+ifMutate :: (VVis -> Boolean) -> (VVis -> VVis) -> Decision -> VVis -> VVis
+ifMutate p f dec (Fill fr) = (Fill fr)
+ifMutate p f dec v@(V d l r) =
+  case lookupDim d dec of
+    Just L  -> V d (ifMutate p f dec l) r
+    Just R  -> V d l (ifMutate p f dec r)
+    Nothing -> if lacksDims dec v && p v
+               then f v
+               else v
+ifMutate p f dec v@(NextTo vs) =
+  if lacksDims dec v && isVis v
+  then if p v then f v else v
+  else NextTo $ map (ifMutate p f dec) vs
+ifMutate p f dec v@(Above vs) =
+  if lacksDims dec v && isVis v
+  then if p v then f v else v
+  else Above $ map (ifMutate p f dec) vs
+ifMutate p f dec v@(Overlay vs) =
+  if lacksDims dec v && p v
+  then f v
+  else Overlay $ map (ifMutate p f dec) vs
+ifMutate p f dec v@(Stacked vs) =
+  if lacksDims dec v && p v
+  then f v
+  else Stacked $ map (ifMutate p f dec) vs
+ifMutate p f dec v@(Cartesian vs) =
+  if lacksDims dec v && p v
+  then f v
+  else Cartesian $ ifMutate p f dec vs
+ifMutate p f dec v@(Polar vs) =
+  if lacksDims dec v && p v
+  then f v
+  else Polar $ ifMutate p f dec vs
+
+isVis :: VVis -> Boolean
+isVis (NextTo vs) = all isFill vs
+isVis (Above vs) = all isFill vs
+isVis (V _ l r) = isVis l && isVis r
+isVis _ = false where
+  isFill (Fill _) = true
+  isFill _ = false
+
+
 lacksDims :: Decision -> VVis -> Boolean
 lacksDims dec (V d l r)     = case lookupDim d dec of
   Nothing -> lacksDims dec l && lacksDims dec r
@@ -187,6 +244,18 @@ lacksDims dec (Stacked vs)  = all ((==) true) (map (lacksDims dec) vs)
 lacksDims dec (Polar v)     = lacksDims dec v
 lacksDims dec (Cartesian v) = lacksDims dec v
 
+flatten :: (VVis -> VVis -> VVis) -> Decision -> VVis -> VVis
+flatten f dec (V d l r)
+  | lacksDims dec l && lacksDims dec r = f l r
+  | otherwise = V d (flatten f dec l) (flatten f dec r)
+flatten f dec (NextTo vs) = NextTo $ map (flatten f dec) vs
+flatten f dec (Above vs) = NextTo $ map (flatten f dec) vs
+flatten f dec (Overlay vs) = NextTo $ map (flatten f dec) vs
+flatten f dec (Stacked vs) = NextTo $ map (flatten f dec) vs
+flatten f dec (Cartesian v) = Cartesian $ flatten f dec v
+flatten f dec (Polar v) = Polar $ flatten f dec v
+flatten _ _ v = v
+
 label :: VVis -> Array String -> VVis
 label v a =
   let ls = map mkLabel a
@@ -195,7 +264,7 @@ label v a =
 mkLabel :: String -> Label
 mkLabel s = Label { text: s
                   , position: Tuple VPosMiddle HPosMiddle
-                  , size: 36.0 }
+                  , size: 72.0 }
 
 labelNE :: VVis -> NE.NonEmptyList Label -> VVis
 labelNE (Fill fr) ls = Fill (fr {label = Just (NE.head ls)})
@@ -317,6 +386,20 @@ plusHeight :: VPs -> VPs -> VPs
 plusHeight (VPs v1) (VPs v2) =
   VPs (v1 { height = v1.height + v2.height })
 
+addBars :: VVis -> VVis -> VVis
+addBars (Fill f1) (Fill f2) =
+  let h1 = getHeight f1.vps
+      h2 = getHeight f2.vps
+  in Fill (f1 { vps = setHeight f1.vps (h1 + h2) })
+addBars v _ = v
+
+avgBars :: VVis -> VVis -> VVis
+avgBars (Fill f1) (Fill f2) =
+  let h1 = getHeight f1.vps
+      h2 = getHeight f2.vps
+  in Fill (f1 { vps = setHeight f1.vps ((h1 + h2) / 2.0) })
+avgBars v _ = v
+
 -- | Iterate over a visualization and remove all the constructors that change
 -- | the coordinate system.
 removeCoord :: VVis -> VVis
@@ -370,6 +453,12 @@ color1 :: VVis -> Color -> VVis
 color1 v c = mapVPs (f c) v where
   f c (VPs vps) = VPs (vps { color = c })
 
+alpha :: VVis -> Number -> VVis
+alpha v n = mapVPs (f n) v where
+  f n (VPs vps) =
+    let c = toRGBA' vps.color
+    in VPs (vps { color = rgba' c.r c.g c.b n})
+
 --------------------------------------------------------------------------------
 -- Things related to variability
 
@@ -419,6 +508,9 @@ isVisible r = let (VPs vps) = r.vps
 
 getHeight :: VPs -> Number
 getHeight (VPs vps) = vps.height
+
+setHeight :: VPs -> Number -> VPs
+setHeight (VPs vps) h = VPs (vps { height = h })
 
 getWidth :: VPs -> Number
 getWidth (VPs vps) = vps.width
@@ -708,6 +800,9 @@ stack2 x y = Stacked (NE.cons x (NE.singleton y))
 vBarchart :: Array (V Number) -> VVis
 vBarchart = NextTo <<< fillsH
 
+barchart :: Array Number -> VVis
+barchart = vBarchart <<< map One
+
 vPie :: Array (V (Array Number)) -> VVis
 vPie xs =
   let mna = map (map (\a -> U.unsafeMaybe (F.minimum a))) (map plainVals xs)
@@ -718,3 +813,6 @@ vPie xs =
       fw = Frame { frameMin: min 0.0 mn, frameMax: max 0.0 mx}
       fs = map (fillsWA fh fw) xs
   in Polar $ NextTo $ U.unsafeMaybe (NE.fromFoldable fs)
+
+piechart :: Array Number -> VVis
+piechart xs = Polar $ NextTo (fillsW (map One xs))
