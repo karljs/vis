@@ -62,6 +62,7 @@ module Main
   , flt1r
   , titanic
   , fltoff
+  , talk
   ) where
 
 import Color.Scheme.MaterialDesign
@@ -84,8 +85,8 @@ import Graphics.Canvas (CANVAS)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
-import Math (log, sqrt)
-import Prelude (Unit, bind, id, map, negate, ($), (/), (<<<))
+import Math (log, max, min, sqrt)
+import Prelude (Unit, bind, id, map, negate, ($), (*), (/), (<<<))
 import V (Dir(..), V(..), dec, emptyDec, singleDec)
 import Vis.Types (Frame(..), VVis(..), ppv)
 import VisColor (defaultColors)
@@ -401,3 +402,20 @@ fltoff = overlay flt1l (overlay flt1r (flt1 `space` 0.4 `leftSpace` 0.01 `rightS
 
 titanic :: VVis
 titanic = barchart [885.0, 706.0, 285.0, 325.0] `color1` forestgreen `label` ["885","706","285","325"]
+
+talk :: VVis
+talk =
+  let z = vZipWith minusHeight vpos1r vpos2r
+      maxH = max (max (visMaxH vpos1r) (visMaxH vpos2r)) (visMaxH z)
+      minH = min (min (visMinH vpos1r) (visMinH vpos2r)) (visMinH z)
+      maxW = max (max (visMaxW vpos1r) (visMaxW vpos2r)) (visMaxW z)
+      minW = min (min (visMinW vpos1r) (visMinW vpos2r)) (visMinW z)
+      frm1 = Frame { frameMin: min 0.0 minH, frameMax: max 0.0 maxH }
+      frm2 = Frame { frameMin: min 0.0 minW, frameMax: max 0.0 maxW }
+      vis1 = setFrames frm1 frm2 vpos1r
+      vis2 = setFrames frm1 frm2 vpos2r
+      vis3 = setFrames frm1 frm2 (vZipWith minusHeight vis1 vis2)
+  in nextTo [ above [vis1, vis2] `space` 0.2, frameManipV (\x -> x * 2.0) vis3 ] `space` 0.2
+
+--fivea :: VVis
+--fivea = nextTo [above [vpos1r, vpos2r] `space` 0.2, vZipWith minusHeight vpos1r vpos2r] `space` 0.2

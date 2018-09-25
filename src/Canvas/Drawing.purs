@@ -13,6 +13,9 @@ module Canvas.Drawing
   , toPolar
   , toRectangle
   , toWedge
+
+  , relativeWidth
+  , widthIfHorizontal
   ) where
 
 import Canvas.Drawing.Polar (drawHintWedge, drawStackedWedges, drawWedge)
@@ -20,6 +23,7 @@ import Canvas.Drawing.Rectangular (drawBar, drawHintRect, drawSMRect, drawStacke
 import Canvas.Types (CEffects, Rectangle(..), Space(..), Wedge(..))
 import Color (Color, black)
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Console (log)
 import Data.Foldable (sequence_, sum)
 import Data.Int (toNumber)
 import Data.List (List(..), filter, zipWith, (:))
@@ -27,10 +31,11 @@ import Data.List.NonEmpty (length, reverse, toList)
 import Data.Map (lookup, singleton)
 import Data.Maybe (Maybe(..))
 import Data.Ord (abs)
+import Data.Profunctor.Split (split)
 import Data.Tuple (Tuple(..))
 import Graphics.Canvas (Context2D)
 import Math (pi)
-import Prelude (Unit, discard, flip, map, min, pure, unit, ($), (*), (+), (-), (/))
+import Prelude (Unit, discard, flip, map, min, pure, show, unit, ($), (*), (+), (-), (/))
 import UI (DecisionColors)
 import V (Decision, Dir(..), Dim, lookupDim, notInDec)
 import Vis (Orientation(..), getColor, getHeight, getOrientation, getWidth, isVisible, removeCoord, selectVis, visDims)
@@ -87,6 +92,7 @@ parseVis :: forall m.
   Eff (CEffects m) Unit
 parseVis ctx dec cs (NextTo vs) (SpaceCartesian r) = do
   let bs = splitBoxH r (toList $ map (relativeWidth dec) vs)
+  log (show bs)
   sequence_ $ zipWith (parseVis ctx dec cs) (toList vs) bs
 parseVis ctx dec cs (NextTo vs) (SpacePolar w) = do
   let ws = splitWedgeHOdd w (toList $ map (relativeWidth dec) vs)
@@ -187,6 +193,9 @@ splitBoxHT (Rectangle orig) (Rectangle r) (v : vs) =
        splitBoxHT (Rectangle orig)
                   (Rectangle (r { x = r.x + newW, w = r.w - newW } ))
                   vs
+
+-- splitBoxHOdd :: Rectangle -> List Number -> List Space
+-- splitBoxHOdd = undefined
 
 splitBoxV :: Rectangle -> List Number -> List Space
 splitBoxV r vs =

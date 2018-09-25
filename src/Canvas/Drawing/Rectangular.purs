@@ -41,10 +41,13 @@ drawBar ctx w h (Rectangle r) (Frame fw) (Frame fh) ml col = do
   setLineDash ctx []
   setLineWidth ctx 1.0
   let rect = if h >= 0.0 && w >= 0.0
-             then { x: zw, y: vh, w: vw - zw, h: zh - vh }
+             then { x: zw, y: vh, w: r.w, h: zh - vh }
+            --  then { x: zw, y: vh, w: vw - zw, h: zh - vh }
              else if h < 0.0
-                  then { x: zw , y: zh , w: vw - zw , h: vh - zh }
-                  else { x: vw , y: vh , w: zw - vw , h: zh - vh }
+                  -- then { x: zw , y: zh , w: vw - zw , h: vh - zh }
+                  then { x: zw , y: zh , w: r.w , h: vh - zh }
+                  else { x: vw , y: vh , w: r.w , h: zh - vh }
+                  -- else { x: vw , y: vh , w: zw - vw , h: zh - vh }
   fillRect ctx rect
   strokeRect ctx rect
   case ml of

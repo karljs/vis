@@ -66,6 +66,8 @@ module Vis
   , vBarchart
   , barchart
   , piechart
+
+  , frameManipV
   ) where
 
 import Color (Color, rgba', toRGBA', white)
@@ -816,3 +818,16 @@ vPie xs =
 
 piechart :: Array Number -> VVis
 piechart xs = Polar $ NextTo (fillsW (map One xs))
+
+frameManipV :: (Number -> Number) -> VVis -> VVis
+frameManipV f v = mapFill (frapply f) v
+  where
+    frapply :: (Number -> Number) -> FillRec -> FillRec
+    frapply f fr =
+      let (Frame fv) = fr.frameH
+          fv' = Frame { frameMin: f fv.frameMin
+                      , frameMax: f fv.frameMax
+                      }
+      in (fr { frameH = fv' })
+
+    -- VPs vps) = VPs (vps { color = c })
